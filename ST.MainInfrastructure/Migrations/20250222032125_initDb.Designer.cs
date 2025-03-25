@@ -12,7 +12,7 @@ using ST.MainInfrastructure.Data;
 namespace ST.MainInfrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240620101854_initDb")]
+    [Migration("20250222032125_initDb")]
     partial class initDb
     {
         /// <inheritdoc />
