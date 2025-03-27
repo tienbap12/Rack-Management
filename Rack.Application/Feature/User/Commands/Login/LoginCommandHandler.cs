@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rack.Application.Commons.Abstractions;
-using Rack.Application.Wrappers;
+using Rack.Application.Primitives;
 using Rack.Contracts.Authentication;
 using Rack.Doamin.Commons.Primitives;
 using Rack.Domain.Commons.Abstractions;
@@ -54,7 +54,7 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,IJwtProvider jwtProvider
             IsRevoked = false,
             ExpiryDate = DateTime.UtcNow.AddMonths(1) 
         };
-        await tokenRepo.CreateAsync(refreshToken);
+        await tokenRepo.CreateAsync(refreshToken, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         
         var result = new AuthResponse

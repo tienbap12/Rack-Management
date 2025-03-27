@@ -1,7 +1,6 @@
-using Rack.Application.Wrappers;
+using Rack.Application.Primitives;
 using Rack.Contracts.Authentication;
 using Rack.Doamin.Commons.Primitives;
-using LoginRequest = Microsoft.AspNetCore.Identity.Data.LoginRequest;
 
 namespace Rack.Application.Feature.User.Commands.Login;
 

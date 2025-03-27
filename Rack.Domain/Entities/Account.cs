@@ -34,5 +34,7 @@ namespace Rack.Domain.Entities
         public virtual Role Roles { get; set; }
         public DateTime CreatedOn { get; set; } = DateTime.Now;
         public DateTime? LastModifiedOn { get; set; }
+        public string CreatedBy { get; set; }
+        public string LastModifiedBy { get; set; }
     }
 }

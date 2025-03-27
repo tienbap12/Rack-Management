@@ -14,14 +14,14 @@ namespace Rack.MainInfrastructure{
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            services.AddDbContext<ApplicationDbContext>(options =>
+            services.AddDbContext<RackManagementContext>(options =>
                 options.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection"),
                     optionsBuilder => optionsBuilder
-                        .MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+                        .MigrationsAssembly(typeof(RackManagementContext).Assembly.FullName)));
 
             //DI UnitOfWork
-            services.AddScoped<IUnitOfWork, ApplicationDbContext>();
+            services.AddScoped<IUnitOfWork, RackManagementContext>();
 
             //DI Authentication
             services.AddScoped<IJwtProvider, JwtProvider>();

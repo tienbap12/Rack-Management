@@ -1,24 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Rack.Domain.Commons.Primitives;
+using Rack.Domain.Interfaces;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Rack.Domain.Commons.Primitives;
-using Rack.Domain.Interfaces;
 
 namespace Rack.Domain.Data
 {
     public interface IUnitOfWork : IDisposable
     {
-        Task SaveChangesAsync(CancellationToken cancellation = default);
+        Task<int> SaveChangesAsync(CancellationToken cancellation = default);
 
-        Task CreateAsync<T>(T entity) where T : class;
-
-        Task CreateRangeAsync<T>(IEnumerable<T> entities) where T : class;
-
-        Task DeleteAsync<T>(Guid id) where T : class;
-
-
-        Task BeginTransacionAsync(CancellationToken cancellationToken = default);
+        Task BeginTransactionAsync(CancellationToken cancellationToken = default);
 
         Task CommitAsync(CancellationToken cancellationToken = default);
 

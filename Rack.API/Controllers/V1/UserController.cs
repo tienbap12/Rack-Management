@@ -1,10 +1,10 @@
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Rack.API.Contracts;
 using Rack.Application.Feature.User.Commands.Login;
 using Rack.Application.Feature.User.Commands.Register;
 using Rack.Contracts.Authentication;
-using LoginRequest = Microsoft.AspNetCore.Identity.Data.LoginRequest;
+using System.Threading.Tasks;
+
 
 namespace Rack.API.Controllers.V1;
 
@@ -17,7 +17,7 @@ public class UserController : ApiController
         var command = new LoginCommand(request);
         return Ok(await Mediator.Send(command));
     }
-    
+
     [HttpPost]
     [Route(ApiRoutesV1.Account.Register)]
     public async Task<IActionResult> Register([FromBody] AuthRequest request)

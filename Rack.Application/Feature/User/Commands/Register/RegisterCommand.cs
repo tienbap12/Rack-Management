@@ -1,4 +1,4 @@
-using Rack.Application.Wrappers;
+using Rack.Application.Primitives;
 using Rack.Contracts.Authentication;
 using Rack.Doamin.Commons.Primitives;
 

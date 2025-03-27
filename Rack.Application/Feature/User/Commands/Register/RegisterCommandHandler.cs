@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Rack.Application.Commons.Abstractions;
-using Rack.Application.Wrappers;
+using Rack.Application.Primitives;
 using Rack.Doamin.Commons.Primitives;
 using Rack.Domain.Data;
 using Rack.Domain.Entities;
@@ -33,7 +33,7 @@ internal class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordHasher pa
             DoB = request.Request.DoB,
         };
 
-        await userRepo.CreateAsync(newUser);
+        await userRepo.CreateAsync(newUser, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Response.Success("User registered successfully!!!");
     }

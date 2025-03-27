@@ -1,80 +1,65 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Interfaces;
 using Rack.MainInfrastructure.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace Rack.MainInfrastructure.Repositories;
-
-/// <summary>
-///     Represents a generic repository for accessing and manipulating entities of type TEntity.
-/// </summary>
-/// <typeparam name="TEntity">The type of entity.</typeparam>
-public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : Entity
+namespace Rack.MainInfrastructure.Repositories
 {
-    private readonly ApplicationDbContext _context;
-    private readonly DbSet<TEntity> _dbSet;
-
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="GenericRepository{TEntity}" /> class.
-    /// </summary>
-    /// <param name="context">The application database context.</param>
-    /// <param name="unitOfWork">The unit of work.</param>
-    public GenericRepository(ApplicationDbContext context)
+    public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEntity : Entity
     {
-        _context = context;
-        _dbSet = _context.Set<TEntity>();
-    }
+        private readonly DbSet<TEntity> _dbSet;
 
-    /// <summary>
-    ///     Gets an entity by its ID asynchronously.
-    /// </summary>
-    /// <param name="id">The ID of the entity.</param>
-    /// <returns>The entity with the specified ID, or null if not found.</returns>
-    public async Task<TEntity> GetByIdAsync(Guid id)
-    {
-        return await _dbSet.FindAsync(id);
-    }
+        public GenericRepository(RackManagementContext context)
+        {
+            _dbSet = context.Set<TEntity>();
+        }
 
-    /// <summary>
-    ///     Gets all entities asynchronously.
-    /// </summary>
-    /// <returns>A list of all entities.</returns>
-    public async Task<List<TEntity>> GetAllAsync()
-    {
-        return await _dbSet.ToListAsync();
-    }
+        public IQueryable<TEntity> Query => _dbSet;
 
-    /// <summary>
-    ///     Creates a new entity asynchronously.
-    /// </summary>
-    /// <param name="entity">The entity to create.</param>
-    public async Task CreateAsync(TEntity entity)
-    {
-        await _dbSet.AddAsync(entity);
-    }
+        public IQueryable<TEntity> BuildQuery => _dbSet.AsQueryable();
 
+        public async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            return await _dbSet.FindAsync(new object[] { id }, cancellationToken);
+        }
 
-    /// <summary>
-    ///     Deletes an entity by its ID asynchronously.
-    /// </summary>
-    /// <param name="id">The ID of the entity to delete.</param>
-    public void DeleteAsync(Guid id)
-    {
-        _context.Remove(id);
-    }
+        public async Task<List<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            return await _dbSet.ToListAsync(cancellationToken);
+        }
 
-    public IQueryable<TEntity> BuildQuery => _dbSet.AsQueryable();
+        public async Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default)
+        {
+            await _dbSet.AddAsync(entity, cancellationToken);
+        }
 
-    /// <summary>
-    ///     Inserts a range of entities asynchronously.
-    /// </summary>
-    /// <param name="entities">The entities to insert.</param>
-    public async Task InsertRangeAsync(IEnumerable<TEntity> entities)
-    {
-        await _dbSet.AddRangeAsync(entities);
+        public async Task InsertRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+        {
+            await _dbSet.AddRangeAsync(entities, cancellationToken);
+        }
+
+        public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            var entity = await _dbSet.FindAsync(new object[] { id }, cancellationToken);
+            if (entity == null)
+                throw new ArgumentException($"Entity with id {id} not found.");
+
+            if (entity is ISoftDelete softDeleteEntity)
+            {
+                softDeleteEntity.IsDeleted = true;
+                softDeleteEntity.DeletedOn = DateTime.UtcNow;
+                _dbSet.Update(entity);
+            }
+            else
+            {
+                _dbSet.Remove(entity);
+            }
+        }
     }
 }

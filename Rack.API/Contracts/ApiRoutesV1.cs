@@ -6,13 +6,13 @@
         public const string Version = "v1";
         public const string Base = Root + "/";
 
-        public static class Ticket
+        public static class DataCenter
         {
-            public const string GetAll = Base + "Tickets";
-            public const string GetById = GetAll + "/ticketId";
-            public const string Create = Base + "Ticket";
-            public const string Update = GetAll + "/ticketId";
-            public const string Delete = GetAll + "/ticketId";
+            public const string GetAll = Base + "DataCenter";
+            public const string GetById = GetAll + "/DataCenterId";
+            public const string Create = Base + "DataCenter";
+            public const string Update = GetAll + "/DataCenterId";
+            public const string Delete = GetAll + "/DataCenterId";
         }
         public static class Category
         {
