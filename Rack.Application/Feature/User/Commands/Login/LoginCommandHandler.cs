@@ -1,33 +1,34 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Rack.Application.Commons.Abstractions;
-using Rack.Application.Primitives;
 using Rack.Contracts.Authentication;
-using Rack.Doamin.Commons.Primitives;
 using Rack.Domain.Commons.Abstractions;
+using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 using Rack.Domain.Entities;
+using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.User.Commands.Login;
 
-public class LoginCommandHandler(IUnitOfWork unitOfWork,IJwtProvider jwtProvider,
-    IPasswordHashChecker passwordHashChecker) : ICommandHandler<LoginCommand, Response<AuthResponse>>{
+public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvider,
+    IPasswordHashChecker passwordHashChecker) : ICommandHandler<LoginCommand, Response<AuthResponse>>
+{
     public async Task<Response<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var accountRepo = unitOfWork.GetRepository<Account>();
         var tokenRepo = unitOfWork.GetRepository<RefreshToken>();
-        
+
         var user = await accountRepo.BuildQuery.Include(r => r.Roles).Where(x => x.Email == request.Email).FirstOrDefaultAsync(cancellationToken);
-        
+
         if (user is null)
         {
-            return Response<AuthResponse>.NotFoundUserName(request.Email);
+            return Response<AuthResponse>.Failure(Error.NotFound("Địa chỉ Email không tồn tại"));
         }
         var isValidPass = passwordHashChecker.HashesMatch(request.Password, user);
         if (!isValidPass)
         {
-            return Response<AuthResponse>.Failure("Invalid Password");
+            return Response<AuthResponse>.Failure(Error.Validation("Mật khẩu không đúng"));
         }
-        
+
         var token = jwtProvider.Generate(new Account
         {
             Id = user.Id,
@@ -52,16 +53,16 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork,IJwtProvider jwtProvider
             JwtId = Guid.NewGuid().ToString(),
             IsUsed = false,
             IsRevoked = false,
-            ExpiryDate = DateTime.UtcNow.AddMonths(1) 
+            ExpiryDate = DateTime.UtcNow.AddMonths(1)
         };
         await tokenRepo.CreateAsync(refreshToken, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        
+
         var result = new AuthResponse
         {
             token = token,
             Role = user.Roles.Name,
         };
-        return Response<AuthResponse>.Success("Login successfully!!!", result);
+        return Response<AuthResponse>.Success(result);
     }
 }

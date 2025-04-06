@@ -32,17 +32,26 @@ namespace Rack.MainInfrastructure.Data
                 throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
+        public RackManagementContext(DbContextOptions options, IHttpContextAccessor httpContextAccessor) : base(options)
+        {
+            _httpContextAccessor = httpContextAccessor;
+        }
+
         public RackManagementContext(DbContextOptions options) : base(options)
         {
         }
 
         // Expression-bodied DbSet properties for concise code
         public DbSet<DataCenter> DataCenters => Set<DataCenter>();
+
         public DbSet<DeviceRack> Racks => Set<DeviceRack>();
         public DbSet<Device> Devices => Set<Device>();
         public DbSet<ConfigurationItem> ConfigurationItems => Set<ConfigurationItem>();
         public DbSet<Customer> Customers => Set<Customer>();
         public DbSet<ServerRental> ServerRentals => Set<ServerRental>();
+        public DbSet<Account> Accounts => Set<Account>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<Role> Roles => Set<Role>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -113,12 +122,16 @@ namespace Rack.MainInfrastructure.Data
         {
             var httpContext = _httpContextAccessor.HttpContext;
 
-            if (httpContext?.User?.Identity?.IsAuthenticated != true)
-                return "system";
+            // Nếu không có HTTP context hoặc người dùng chưa được xác thực,
+            // thì trả về giá trị mặc định, phù hợp với các API như register hoặc login.
+            if (httpContext == null || httpContext.User?.Identity?.IsAuthenticated != true)
+            {
+                return "system"; // hoặc "newUser", tùy theo nghiệp vụ của bạn
+            }
 
             return httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                ?? httpContext.User.FindFirst("uid")?.Value
-                ?? "system";
+                   ?? httpContext.User.FindFirst("uid")?.Value
+                   ?? "system";
         }
 
         private void UpdateAuditableEntities()
@@ -134,6 +147,7 @@ namespace Rack.MainInfrastructure.Data
                         entry.Entity.CreatedOn = utcNow;
                         entry.Entity.CreatedBy = currentUser;
                         break;
+
                     case EntityState.Modified:
                         entry.Entity.LastModifiedOn = utcNow;
                         entry.Entity.LastModifiedBy = currentUser;
@@ -160,6 +174,7 @@ namespace Rack.MainInfrastructure.Data
         }
 
         #region UnitOfWork Implementation
+
         public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
             _transaction ??= await Database.BeginTransactionAsync(cancellationToken);
@@ -191,9 +206,10 @@ namespace Rack.MainInfrastructure.Data
             }
         }
 
-        #endregion
+        #endregion UnitOfWork Implementation
 
         #region Extended Methods
+
         public void DetachAllEntities()
         {
             var changedEntries = ChangeTracker.Entries()
@@ -205,7 +221,9 @@ namespace Rack.MainInfrastructure.Data
                 entry.State = EntityState.Detached;
             }
         }
-        #endregion
+
+        #endregion Extended Methods
+
         public IGenericRepository<TEntity> GetRepository<TEntity>() where TEntity : Entity
         {
             return new GenericRepository<TEntity>(this);

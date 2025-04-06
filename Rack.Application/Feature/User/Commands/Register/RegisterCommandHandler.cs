@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Rack.Application.Commons.Abstractions;
-using Rack.Application.Primitives;
-using Rack.Doamin.Commons.Primitives;
+using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 using Rack.Domain.Entities;
+using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.User.Commands.Register;
 
@@ -16,7 +16,7 @@ internal class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordHasher pa
 
         if (existingUser != null)
         {
-            return Response.Failure("Username already exists");
+            return Response.Failure(Error.Conflict("Địa chỉ Email đã tồn tại"));
         }
 
         var (hashedPassword, salt) = passwordHasher.HashPassword(request.Request.Password);
@@ -35,6 +35,6 @@ internal class RegisterCommandHandler(IUnitOfWork unitOfWork, IPasswordHasher pa
 
         await userRepo.CreateAsync(newUser, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return Response.Success("User registered successfully!!!");
+        return Response.Success();
     }
 }

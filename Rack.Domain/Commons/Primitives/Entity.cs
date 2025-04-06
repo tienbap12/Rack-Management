@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Rack.Application.Primitives;
+using Rack.Domain.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -25,6 +25,7 @@ namespace Rack.Domain.Commons.Primitives
         public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
         public void AddDomainEvent(IDomainEvent eventItem) => _domainEvents.Add(eventItem);
+
         public void ClearDomainEvents() => _domainEvents.Clear();
     }
 }

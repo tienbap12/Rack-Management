@@ -1,4 +1,4 @@
-﻿namespace Rack.Doamin.Commons.Primitives;
+﻿namespace Rack.Domain.Commons.Primitives;
 
 public static class ValidationErrors
 {

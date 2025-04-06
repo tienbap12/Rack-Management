@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Rack.Domain.Entities
 {
-    public class Account : Entity, IAuditInfo
+    public class Account : Entity, IAuditInfo, ISoftDelete
     {
         [StringLength(64)]
         public string Username { get; set; } = string.Empty;
@@ -29,12 +29,15 @@ namespace Rack.Domain.Entities
         public string Email { get; set; } = string.Empty;
 
         [ForeignKey("Roles")]
-        public  Guid RoleId { get; set; }
+        public Guid RoleId { get; set; }
 
         public virtual Role Roles { get; set; }
         public DateTime CreatedOn { get; set; } = DateTime.Now;
         public DateTime? LastModifiedOn { get; set; }
         public string CreatedBy { get; set; }
         public string LastModifiedBy { get; set; }
+        public bool IsDeleted { get; set; }
+        public string DeletedBy { get; set; }
+        public DateTime? DeletedOn { get; set; }
     }
 }

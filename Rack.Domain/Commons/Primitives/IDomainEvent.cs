@@ -1,8 +1,7 @@
 using MediatR;
 
-namespace Rack.Application.Primitives;
+namespace Rack.Domain.Primitives;
 
 public interface IDomainEvent : INotification
 {
-
 }

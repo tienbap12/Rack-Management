@@ -1,6 +1,6 @@
-﻿using Rack.Application.Primitives;
-using Rack.Contracts.DataCenter;
-using Rack.Doamin.Commons.Primitives;
+﻿using Rack.Contracts.DataCenter;
+using Rack.Domain.Commons.Primitives;
+using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.DataCenter.Commands.Create;
 

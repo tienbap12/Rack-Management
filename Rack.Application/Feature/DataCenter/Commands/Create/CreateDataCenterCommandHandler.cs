@@ -1,8 +1,8 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
-using Rack.Application.Primitives;
-using Rack.Doamin.Commons.Primitives;
+using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
+using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.DataCenter.Commands.Create;
 
@@ -11,14 +11,29 @@ internal class CreateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
     public async Task<Response> Handle(CreateDataCenterCommand request, CancellationToken cancellationToken)
     {
         var dcRepo = unitOfWork.GetRepository<Domain.Entities.DataCenter>();
-        var existingDC = await dcRepo.BuildQuery.Where(x => x.Name == request.Name).FirstOrDefaultAsync(cancellationToken);
+
+        // Kiểm tra trùng lặp
+        var existingDC = await dcRepo.BuildQuery
+            .Where(x => x.Name == request.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
         if (existingDC != null)
         {
-            return Response.Failure("Data Center đã tồn tại!");
+            return Error.Conflict(
+                $"Data Center with name '{request.Name}' already exists"
+            );
         }
+
+        // Mapping và tạo mới
         var newDC = request.Adapt<Domain.Entities.DataCenter>();
         await dcRepo.CreateAsync(newDC, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        return Response.CreateSuccessfully("Tạo Data Center thành công!");
+
+        // Lưu changes
+        if (await unitOfWork.SaveChangesAsync(cancellationToken) == 0)
+        {
+            return Error.Validation("Failed to save data center");
+        }
+
+        return Response.Success();
     }
 }
