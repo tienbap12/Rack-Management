@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Rack.Domain.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

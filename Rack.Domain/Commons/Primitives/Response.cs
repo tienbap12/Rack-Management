@@ -1,5 +1,9 @@
-﻿using System;
+﻿#nullable enable
+
+using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using Rack.Domain.Enum;
 
 namespace Rack.Domain.Commons.Primitives;
 
@@ -13,73 +17,70 @@ public enum ErrorType
     Forbidden
 }
 
-public sealed class Error
+public sealed class Error(string code, string message, ErrorType type = ErrorType.Failure)
 {
-    public static Error None => new Error(string.Empty, string.Empty, ErrorType.Failure);
+    public static readonly Error None = new(string.Empty, string.Empty, ErrorType.Failure);
 
-    public string Code { get; }
-    public string Message { get; }
-    public ErrorType Type { get; }
-
-    public Error(string code, string message, ErrorType type)
-    {
-        Code = code;
-        Message = message;
-        Type = type;
-    }
+    public string Code { get; } = code;
+    public string Message { get; } = message;
+    public ErrorType Type { get; } = type;
 
     public static Error New(string code, string message, ErrorType type = ErrorType.Failure)
-        => new Error(code, message, type);
+           => new(code, message, type);
 
-    public static Error NotFound(string message)
-        => new Error("404", message, ErrorType.NotFound);
+    public static Error Failure(string code = "General.Failure", string message = "A failure has occurred.")
+        => new(code, message, ErrorType.Failure);
 
-    public static Error Validation(string message)
-        => new Error("400", message, ErrorType.Validation);
+    public static Error NotFound(string code = "General.NotFound", string message = "The requested resource was not found.")
+        => new(code, message, ErrorType.NotFound);
 
-    public static Error Conflict(string message)
-        => new Error("409", message, ErrorType.Conflict);
+    public static Error Validation(string code = "General.Validation", string message = "Validation error.")
+        => new(code, message, ErrorType.Validation);
 
-    public static Error Unauthorized(string message)
-        => new Error("401", message, ErrorType.Unauthorized);
+    public static Error Conflict(string code = "General.Conflict", string message = "A conflict occurred.")
+        => new(code, message, ErrorType.Conflict);
 
-    public static Error Forbidden(string message)
-        => new Error("403", message, ErrorType.Forbidden);
+    public static Error Unauthorized(string code = "General.Unauthorized", string message = "Unauthorized access.")
+        => new(code, message, ErrorType.Unauthorized);
+
+    public static Error Forbidden(string code = "General.Forbidden", string message = "Forbidden access.")
+        => new(code, message, ErrorType.Forbidden);
 }
 
 public class Response
 {
-    protected Response(bool isSuccess, Error error)
+    public Response(bool isSuccess, HttpStatusCodeEnum statusCode, string? message = null, Error? error = null)
     {
-        if (isSuccess && error != Error.None)
-            throw new InvalidOperationException("Success response cannot have error");
-
-        if (!isSuccess && error == Error.None)
-            throw new InvalidOperationException("Failure response requires error");
+        if (isSuccess && error is not null)
+            throw new InvalidOperationException("Success response cannot contain an error.");
+        if (!isSuccess && error is null)
+            throw new InvalidOperationException("Failure response must include an error.");
 
         IsSuccess = isSuccess;
-        Error = error;
-    }
-
-    public string Message { get; }
-
-    public Response(string message)
-    {
-        Message = message;
+        StatusCode = statusCode;
+        Message = message ?? (isSuccess ? "Request successful." : error!.Message);
+        Error = error ?? Error.None;
     }
 
     public bool IsSuccess { get; }
+
     public bool IsFailure => !IsSuccess;
+
+    public HttpStatusCodeEnum StatusCode { get; }
+
+    public string Message { get; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Error Error { get; }
 
-    public static Response Success()
-        => new Response(true, Error.None);
+    public static Response Success(string? message = null, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.OK)
+        => new(true, statusCode, message);
 
-    public static Response Failure(Error error)
-        => new Response(false, error);
+    public static Response Failure(Error error, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.BadRequest)
+        => new(false, statusCode, error.Message, error);
 
-    public static Response Failure(string message)
-        => new Response(message);
+    public static Response Failure(string message, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.BadRequest)
+        => new(false, statusCode, message, Error.Failure(message: message));
 
     public static implicit operator Response(Error error)
         => Failure(error);
@@ -87,31 +88,24 @@ public class Response
 
 public class Response<T> : Response
 {
-    private readonly T _data;
+    private readonly T? _data;
 
-    protected Response(T data, bool isSuccess, Error error)
-        : base(isSuccess, error)
+    protected Response(T? data, bool isSuccess, HttpStatusCodeEnum statusCode, string? message = null, Error? error = null)
+    : base(isSuccess, statusCode, message, error)
     {
         _data = data;
     }
 
-    public Response(string message)
-        : base(message)
-    {
-    }
-
-    public T Data => IsSuccess
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public T Data => IsSuccess && _data is not null
         ? _data
-        : throw new InvalidOperationException("Cannot access data from failed response");
+        : throw new InvalidOperationException("Cannot access data from a failed response or when data is null on success.");
 
-    public static Response<T> Success(T data)
-        => new Response<T>(data, true, Error.None);
+    public static Response<T> Success(T data, string? message = null, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.OK)
+        => new(data, true, statusCode, message);
 
-    public new static Response<T> Failure(Error error)
-        => new Response<T>(default!, false, error);
-
-    public new static Response<T> Failure(string message)
-        => new Response<T>(message);
+    public static Response<T> Failure(Error error, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.BadRequest)
+        => new(default, false, statusCode, error.Message, error);
 
     public static implicit operator Response<T>(T data)
         => Success(data);
@@ -129,25 +123,25 @@ public class PagedResponse<T> : Response<IReadOnlyList<T>>
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageNumber < TotalPages;
 
-    private PagedResponse(
-        IReadOnlyList<T> data,
-        int totalCount,
-        int pageNumber,
-        int pageSize)
-        : base(data, true, Error.None)
+    public PagedResponse(IReadOnlyList<T> data, int totalCount, int pageNumber, int pageSize, string? message = null)
+        : base(data, true, HttpStatusCodeEnum.OK, message)
     {
         TotalCount = totalCount;
         PageNumber = pageNumber;
         PageSize = pageSize;
-        TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        TotalPages = pageSize > 0 ? (int)Math.Ceiling(totalCount / (double)pageSize) : 0;
     }
 
     public static PagedResponse<T> Create(
         IReadOnlyList<T> items,
         int totalCount,
         int pageNumber,
-        int pageSize)
+        int pageSize,
+        string? message = null)
     {
-        return new PagedResponse<T>(items, totalCount, pageNumber, pageSize);
+        if (pageNumber <= 0) throw new ArgumentOutOfRangeException(nameof(pageNumber));
+        if (pageSize <= 0) throw new ArgumentOutOfRangeException(nameof(pageSize));
+
+        return new PagedResponse<T>(items, totalCount, pageNumber, pageSize, message);
     }
 }

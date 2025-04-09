@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace Rack.Domain.Primitives;
+namespace Rack.Domain.Commons.Primitives;
 
 public interface ICommand<out T> : IRequest<T>
 {

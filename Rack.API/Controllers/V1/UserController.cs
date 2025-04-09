@@ -5,7 +5,6 @@ using Rack.Application.Feature.User.Commands.Register;
 using Rack.Contracts.Authentication;
 using System.Threading.Tasks;
 
-
 namespace Rack.API.Controllers.V1;
 
 public class UserController : ApiController
@@ -15,7 +14,8 @@ public class UserController : ApiController
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var command = new LoginCommand(request);
-        return Ok(await Mediator.Send(command));
+        var result = await Mediator.Send(command);
+        return ToActionResult(result);
     }
 
     [HttpPost]
@@ -23,6 +23,7 @@ public class UserController : ApiController
     public async Task<IActionResult> Register([FromBody] AuthRequest request)
     {
         var command = new RegisterCommand(request);
-        return Ok(await Mediator.Send(command));
+        var result = await Mediator.Send(command);
+        return ToActionResult(result);
     }
 }

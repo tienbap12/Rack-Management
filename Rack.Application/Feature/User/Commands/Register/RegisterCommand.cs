@@ -1,6 +1,5 @@
 using Rack.Contracts.Authentication;
 using Rack.Domain.Commons.Primitives;
-using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.User.Commands.Register;
 

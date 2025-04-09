@@ -5,55 +5,55 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Rack.Application.Commons.Behaviors;
-using Rack.Application.Options;
-using System.Reflection;
 using System.Text;
+namespace Rack.Application;
 
-namespace Rack.Application
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddApplication(this IServiceCollection services, IConfiguration configuration)
     {
-        public static IServiceCollection AddApplication(this IServiceCollection services,
-            IConfiguration configuration)
+        var assembly = typeof(DependencyInjection).Assembly;
+
+        // AutoMapper
+        services.AddAutoMapper(assembly);
+
+        // Validators (FluentValidation)
+        services.AddValidatorsFromAssembly(assembly);
+
+        // MediatR & Pipeline Behaviors
+        services.AddMediatR(config =>
         {
-            var assembly = typeof(DependencyInjection).Assembly;
-            services.AddValidatorsFromAssembly(assembly);
-            services.AddMediatR(config =>
+            config.RegisterServicesFromAssembly(assembly);
+
+            // Add behaviors in proper order: Validation → UnitOfWork → ResponseWrapper
+            config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+            config.AddOpenBehavior(typeof(UnitOfWorkBehavior<,>));
+            config.AddOpenBehavior(typeof(ResponseWrapperBehavior<,>));
+        });
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                config.RegisterServicesFromAssembly(assembly);
-                config.AddOpenBehavior(typeof(UnitOfWorkBehavior<,>));
-            });
-            services.AddTransient(typeof(IPipelineBehavior<,>),
-                typeof(ValidationBehavior<,>));
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = configuration["Jwt:Issuer"],
+                ValidAudience = configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(configuration["Jwt:SecurityKey"])
+                )
+            };
+        });
 
-            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-            services.AddAutoMapper(Assembly.GetExecutingAssembly());
-
-            var jwtSettings = new JwtSettings();
-            configuration.GetSection(nameof(JwtSettings)).Bind(jwtSettings);
-            services.AddSingleton<JwtSettings>(jwtSettings);
-
-            services.AddAuthentication(options =>
-                {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
-                {
-                    options.SaveToken = true;
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = configuration["Jwt:Issuer"],
-                        ValidAudience = configuration["Jwt:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:SecurityKey"]))
-                    };
-                });
-            return services;
-        }
+        return services;
     }
 }

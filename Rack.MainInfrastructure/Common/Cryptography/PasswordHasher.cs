@@ -2,6 +2,7 @@
 using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Entities;
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -48,23 +49,13 @@ namespace Rack.MainInfrastructure.Common.Cryptography
 
         private static string GenerateSaltedHash(string plainText, string salt)
         {
-            HashAlgorithm algorithm = SHA512.Create();
+            using var algorithm = SHA512.Create();
 
-            var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
-            var saltBytes = Encoding.UTF8.GetBytes(salt);
+            byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+            byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
+            byte[] combined = plainBytes.Concat(saltBytes).ToArray();
 
-            var plainTextWithSaltBytes = new byte[plainTextBytes.Length + saltBytes.Length];
-
-            for (int i = 0; i < plainText.Length; i++)
-            {
-                plainTextWithSaltBytes[i] = plainTextBytes[i];
-            }
-            for (int i = 0; i < salt.Length; i++)
-            {
-                plainTextWithSaltBytes[plainText.Length + i] = saltBytes[i];
-            }
-
-            return Convert.ToBase64String(algorithm.ComputeHash(plainTextWithSaltBytes));
+            return Convert.ToBase64String(algorithm.ComputeHash(combined));
         }
     }
 }

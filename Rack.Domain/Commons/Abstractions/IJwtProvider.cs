@@ -1,7 +1,8 @@
 ﻿using Rack.Domain.Entities;
 
-namespace Rack.Application.Commons.Abstractions;
+namespace Rack.Domain.Commons.Abstractions;
 
-public interface IJwtProvider{
+public interface IJwtProvider
+{
     string Generate(Account req);
 }

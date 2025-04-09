@@ -61,8 +61,8 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Password")
-                        .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)");
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(11)
@@ -439,13 +439,13 @@ namespace Rack.MainInfrastructure.Migrations
 
             modelBuilder.Entity("Rack.Domain.Entities.Account", b =>
                 {
-                    b.HasOne("Rack.Domain.Entities.Role", "Roles")
-                        .WithMany()
+                    b.HasOne("Rack.Domain.Entities.Role", "Role")
+                        .WithMany("Accounts")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Roles");
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("Rack.Domain.Entities.ConfigurationItem", b =>
@@ -538,6 +538,11 @@ namespace Rack.MainInfrastructure.Migrations
             modelBuilder.Entity("Rack.Domain.Entities.DeviceRack", b =>
                 {
                     b.Navigation("Devices");
+                });
+
+            modelBuilder.Entity("Rack.Domain.Entities.Role", b =>
+                {
+                    b.Navigation("Accounts");
                 });
 #pragma warning restore 612, 618
         }

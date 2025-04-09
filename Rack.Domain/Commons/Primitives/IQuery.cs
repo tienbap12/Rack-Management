@@ -1,7 +1,6 @@
 ﻿using MediatR;
-using Rack.Domain.Commons.Primitives;
 
-namespace Rack.Domain.Primitives;
+namespace Rack.Domain.Commons.Primitives;
 
 public interface IQuery<T> : IRequest<Response<T>>
 {

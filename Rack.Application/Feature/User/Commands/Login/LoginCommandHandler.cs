@@ -5,7 +5,6 @@ using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 using Rack.Domain.Entities;
-using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.User.Commands.Login;
 
@@ -17,7 +16,7 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
         var accountRepo = unitOfWork.GetRepository<Account>();
         var tokenRepo = unitOfWork.GetRepository<RefreshToken>();
 
-        var user = await accountRepo.BuildQuery.Include(r => r.Roles).Where(x => x.Email == request.Email).FirstOrDefaultAsync(cancellationToken);
+        var user = await accountRepo.BuildQuery.Include(r => r.Role).Where(x => x.Email == request.Email || x.Username == request.Email).FirstOrDefaultAsync(cancellationToken);
 
         if (user is null)
         {
@@ -39,10 +38,10 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
             DoB = user.DoB,
             RoleId = user.RoleId,
             Phone = user.Phone,
-            Roles = new Role
+            Role = new Domain.Entities.Role
             {
                 Id = user.RoleId,
-                Name = user.Roles.Name
+                Name = user.Role.Name
             }
         });
 
@@ -60,8 +59,8 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
 
         var result = new AuthResponse
         {
-            token = token,
-            Role = user.Roles.Name,
+            Token = token,
+            Role = user.Role.Name,
         };
         return Response<AuthResponse>.Success(result);
     }

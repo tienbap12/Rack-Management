@@ -2,15 +2,14 @@
 using Rack.Contracts.DataCenter.Responses;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
-using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.DataCenter.Queries.GetAll;
 
-internal class GetAllDataCenterQuerryHandler(IUnitOfWork unitOfWork)
-    : IQueryHandler<GetAllDataCenterQuerry, List<DataCenterResponse>>
+internal class GetAllDataCenterQueryHandler(IUnitOfWork unitOfWork)
+    : IQueryHandler<GetAllDataCenterQuery, List<DataCenterResponse>>
 {
     public async Task<Response<List<DataCenterResponse>>> Handle(
-        GetAllDataCenterQuerry request,
+        GetAllDataCenterQuery request,
         CancellationToken cancellationToken)
     {
         try
@@ -33,7 +32,7 @@ internal class GetAllDataCenterQuerryHandler(IUnitOfWork unitOfWork)
         catch (Exception ex)
         {
             // Xử lý lỗi và trả về response thất bại
-            return Response<List<DataCenterResponse>>.Failure(ex.Message);
+            return Response<List<DataCenterResponse>>.Failure(Error.Failure(ex.Message), Domain.Enum.HttpStatusCodeEnum.InternalServerError);
         }
     }
 }

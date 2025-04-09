@@ -44,22 +44,17 @@ namespace Rack.MainInfrastructure.Repositories
             await _dbSet.AddRangeAsync(entities, cancellationToken);
         }
 
+        // Trong GenericRepository.cs
         public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         {
             var entity = await _dbSet.FindAsync(new object[] { id }, cancellationToken);
             if (entity == null)
+                // Cân nhắc trả về false hoặc null thay vì throw exception ở đây
+                // để Handler có thể trả về NotFound Response.
                 throw new ArgumentException($"Entity with id {id} not found.");
 
-            if (entity is ISoftDelete softDeleteEntity)
-            {
-                softDeleteEntity.IsDeleted = true;
-                softDeleteEntity.DeletedOn = DateTime.UtcNow;
-                _dbSet.Update(entity);
-            }
-            else
-            {
-                _dbSet.Remove(entity);
-            }
+            // Chỉ cần gọi Remove. Hook trong SaveChanges sẽ xử lý ISoftDelete.
+            _dbSet.Remove(entity);
         }
     }
 }

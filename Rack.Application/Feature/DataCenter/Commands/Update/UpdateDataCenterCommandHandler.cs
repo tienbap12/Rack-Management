@@ -1,6 +1,5 @@
 ﻿using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
-using Rack.Domain.Primitives;
 
 namespace Rack.Application.Feature.DataCenter.Commands.Update;
 

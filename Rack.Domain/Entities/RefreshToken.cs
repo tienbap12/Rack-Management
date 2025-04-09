@@ -7,10 +7,8 @@ namespace Rack.Domain.Entities
     public class RefreshToken : Entity
     {
         public Guid UserId { get; set; }
-
         [ForeignKey(nameof(UserId))]
         public Account Account { get; set; }
-
         public string Token { get; set; }
         public string JwtId { get; set; }
         public bool IsUsed { get; set; }

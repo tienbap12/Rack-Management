@@ -11,7 +11,7 @@ namespace Rack.Domain.Entities
         [StringLength(64)]
         public string Username { get; set; } = string.Empty;
 
-        [StringLength(64)]
+        [StringLength(512)]
         public string Password { get; set; } = string.Empty;
 
         [StringLength(512)]
@@ -28,10 +28,10 @@ namespace Rack.Domain.Entities
         [StringLength(128)]
         public string Email { get; set; } = string.Empty;
 
-        [ForeignKey("Roles")]
+        [ForeignKey(nameof(Role))]
         public Guid RoleId { get; set; }
 
-        public virtual Role Roles { get; set; }
+        public virtual Role Role { get; set; }
         public DateTime CreatedOn { get; set; } = DateTime.Now;
         public DateTime? LastModifiedOn { get; set; }
         public string CreatedBy { get; set; }

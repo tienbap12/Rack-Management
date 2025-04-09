@@ -118,25 +118,9 @@ namespace Rack.MainInfrastructure.Data
             // Additional soft delete configuration if needed
         }
 
-        private string GetCurrentUser()
-        {
-            var httpContext = _httpContextAccessor.HttpContext;
-
-            // Nếu không có HTTP context hoặc người dùng chưa được xác thực,
-            // thì trả về giá trị mặc định, phù hợp với các API như register hoặc login.
-            if (httpContext == null || httpContext.User?.Identity?.IsAuthenticated != true)
-            {
-                return "system"; // hoặc "newUser", tùy theo nghiệp vụ của bạn
-            }
-
-            return httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                   ?? httpContext.User.FindFirst("uid")?.Value
-                   ?? "system";
-        }
 
         private void UpdateAuditableEntities()
         {
-            var currentUser = GetCurrentUser();
             var utcNow = DateTime.UtcNow;
 
             foreach (var entry in ChangeTracker.Entries<IAuditInfo>())
@@ -145,12 +129,12 @@ namespace Rack.MainInfrastructure.Data
                 {
                     case EntityState.Added:
                         entry.Entity.CreatedOn = utcNow;
-                        entry.Entity.CreatedBy = currentUser;
+                        entry.Entity.CreatedBy = "";
                         break;
 
                     case EntityState.Modified:
                         entry.Entity.LastModifiedOn = utcNow;
-                        entry.Entity.LastModifiedBy = currentUser;
+                        entry.Entity.LastModifiedBy = "currentUser";
                         break;
                 }
             }
@@ -158,7 +142,6 @@ namespace Rack.MainInfrastructure.Data
 
         private void HandleSoftDelete()
         {
-            var currentUser = GetCurrentUser();
             var utcNow = DateTime.UtcNow;
 
             foreach (var entry in ChangeTracker.Entries<ISoftDelete>())
@@ -168,7 +151,7 @@ namespace Rack.MainInfrastructure.Data
                     entry.State = EntityState.Modified;
                     entry.Entity.IsDeleted = true;
                     entry.Entity.DeletedOn = utcNow;
-                    entry.Entity.DeletedBy = currentUser;
+                    entry.Entity.DeletedBy = "currentUser";
                 }
             }
         }
