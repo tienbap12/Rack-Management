@@ -18,7 +18,7 @@ public class RackController : ApiController
     {
         var query = new GetAllDeviceRackQuery();
         var result = await Mediator.Send(query);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpGet]
@@ -27,7 +27,7 @@ public class RackController : ApiController
     {
         var query = new GetDeviceRackByIdQuery(rackId);
         var result = await Mediator.Send(query);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPost]
@@ -36,7 +36,7 @@ public class RackController : ApiController
     {
         var command = new CreateDeviceRackCommand(request);
         var result = await Mediator.Send(command);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPatch]
@@ -45,7 +45,7 @@ public class RackController : ApiController
     {
         var command = new UpdateDeviceRackCommand(rackId, request);
         var result = await Mediator.Send(command);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpDelete]
@@ -54,6 +54,6 @@ public class RackController : ApiController
     {
         var command = new DeleteDeviceRackCommand(rackId);
         var result = await Mediator.Send(command);
-        return Ok(result);
+        return ToActionResult(result);
     }
 }

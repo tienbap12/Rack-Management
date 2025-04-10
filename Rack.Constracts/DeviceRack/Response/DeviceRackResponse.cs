@@ -2,6 +2,7 @@
 {
     public class DeviceRackResponse
     {
+        public Guid Id { get; set; }
         public Guid DataCenterID { get; set; }
         public string RackNumber { get; set; } = null!;
         public string? Size { get; set; }    // Ví dụ: '42U'

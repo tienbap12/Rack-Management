@@ -1,4 +1,4 @@
-using Rack.Contracts.DataCenter.Responses;
+using Rack.Contracts.DataCenter.Response;
 using Rack.Domain.Commons.Primitives;
 
 namespace Rack.Application.Feature.DataCenter.Queries.GetById

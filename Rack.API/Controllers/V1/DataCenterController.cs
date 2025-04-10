@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Rack.API.Contracts;
 using Rack.Application.Feature.DataCenter.Commands.Create;
 using Rack.Application.Feature.DataCenter.Commands.Delete;
@@ -19,7 +20,7 @@ public class DataCenterController : ApiController
     {
         var query = new GetAllDataCenterQuery();
         var result = await Mediator.Send(query);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpGet]
@@ -28,16 +29,17 @@ public class DataCenterController : ApiController
     {
         var query = new GetDataCenterByIdQuery(dcId);
         var result = await Mediator.Send(query);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [Route(ApiRoutesV1.DataCenter.Create)]
     public async Task<IActionResult> Create([FromBody] CreateDataCenterRequest request)
     {
         var command = new CreateDataCenterCommand(request);
         var result = await Mediator.Send(command);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpPatch]
@@ -46,7 +48,7 @@ public class DataCenterController : ApiController
     {
         var command = new UpdateDataCenterCommand(dcId, request);
         var result = await Mediator.Send(command);
-        return Ok(result);
+        return ToActionResult(result);
     }
 
     [HttpDelete]
@@ -55,6 +57,6 @@ public class DataCenterController : ApiController
     {
         var command = new DeleteDataCenterCommand(dcId);
         var result = await Mediator.Send(command);
-        return Ok(result);
+        return ToActionResult(result);
     }
 }

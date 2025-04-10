@@ -18,7 +18,7 @@ public class RoleController : ApiController
     public async Task<IActionResult> GetAll()
     {
         var query = new GetAllRolesQuery();
-        return Ok(await Mediator.Send(query));
+        return ToActionResult(await Mediator.Send(query));
     }
 
     [HttpGet]
@@ -26,7 +26,7 @@ public class RoleController : ApiController
     public async Task<IActionResult> GetById([FromRoute] Guid roleId)
     {
         var query = new GetRoleByIdQuery(roleId);
-        return Ok(await Mediator.Send(query));
+        return ToActionResult(await Mediator.Send(query));
     }
 
     [HttpPost]
@@ -34,7 +34,7 @@ public class RoleController : ApiController
     public async Task<IActionResult> Create([FromBody] CreateRoleRequest request)
     {
         var command = new CreateRoleCommand(request);
-        return Ok(await Mediator.Send(command));
+        return ToActionResult(await Mediator.Send(command));
     }
 
     [HttpPatch]
@@ -42,7 +42,7 @@ public class RoleController : ApiController
     public async Task<IActionResult> Update([FromRoute] Guid roleId, [FromBody] UpdateRoleRequest request)
     {
         var command = new UpdateRoleCommand(roleId, request);
-        return Ok(await Mediator.Send(command));
+        return ToActionResult(await Mediator.Send(command));
     }
 
     [HttpDelete]
@@ -50,6 +50,6 @@ public class RoleController : ApiController
     public async Task<IActionResult> Delete([FromRoute] Guid roleId)
     {
         var command = new DeleteRoleCommand(roleId);
-        return Ok(await Mediator.Send(command));
+        return ToActionResult(await Mediator.Send(command));
     }
 }

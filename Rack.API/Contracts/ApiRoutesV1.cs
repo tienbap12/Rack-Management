@@ -31,6 +31,7 @@ namespace Rack.API.Contracts
             // DELETE api/v1/datacenters/{dcId:guid}
             public const string Delete = ControllerBase + "/{dcId:guid}";
         }
+
         public static class Rack
         {
             // Sử dụng tên resource số nhiều và làm base cho controller này
@@ -52,6 +53,7 @@ namespace Rack.API.Contracts
             // DELETE api/v1/racks/{dcId:guid}
             public const string Delete = ControllerBase + "/{rackId:guid}";
         }
+
         public static class Device
         {
             // Sử dụng tên resource số nhiều và làm base cho controller này
@@ -100,6 +102,7 @@ namespace Rack.API.Contracts
 
             // POST api/v1/roles
             public const string Create = ControllerBase;
+
             // GET api/v1/roles/{roleId:guid}
             // Sử dụng placeholder {roles} và ràng buộc kiểu dữ liệu :guid
             public const string GetById = ControllerBase + "/{roleId:guid}";
@@ -109,6 +112,26 @@ namespace Rack.API.Contracts
 
             // DELETE api/v1/roles/{roleId:guid}
             public const string Delete = ControllerBase + "/{roleId:guid}";
+        }
+
+        public static class Customer
+        {
+            private const string ControllerBase = Base + "/customers"; // "api/v1/customers"
+            public const string GetAll = ControllerBase;
+            public const string Create = ControllerBase;
+            public const string GetById = ControllerBase + "/{customerId:guid}";
+            public const string Update = ControllerBase + "/{customerId:guid}";
+            public const string Delete = ControllerBase + "/{customerId:guid}";
+        }
+
+        public static class ServerRental
+        {
+            private const string ControllerBase = Base + "/serverrentals"; // "api/v1/serverrentals"
+            public const string GetAll = ControllerBase;
+            public const string Create = ControllerBase;
+            public const string GetById = ControllerBase + "/{rentalId:guid}";
+            public const string Update = ControllerBase + "/{rentalId:guid}";
+            public const string Delete = ControllerBase + "/{rentalId:guid}";
         }
     }
 }

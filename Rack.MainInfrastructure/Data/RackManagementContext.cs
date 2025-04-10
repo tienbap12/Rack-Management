@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Rack.Application.Commons.Interfaces;
 using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
@@ -11,7 +11,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,24 +19,20 @@ namespace Rack.MainInfrastructure.Data
     public class RackManagementContext : DbContext, IUnitOfWork
     {
         private IDbContextTransaction? _transaction;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserContext _userContext;
         private readonly ConcurrentDictionary<Type, object> _repositories = new();
 
         public RackManagementContext(
             DbContextOptions<RackManagementContext> options,
-            IHttpContextAccessor httpContextAccessor)
+            IUserContext userContext)
             : base(options)
         {
-            _httpContextAccessor = httpContextAccessor ??
-                throw new ArgumentNullException(nameof(httpContextAccessor));
+            _userContext = userContext ??
+                throw new ArgumentNullException(nameof(userContext));
         }
 
-        public RackManagementContext(DbContextOptions options, IHttpContextAccessor httpContextAccessor) : base(options)
-        {
-            _httpContextAccessor = httpContextAccessor;
-        }
-
-        public RackManagementContext(DbContextOptions options) : base(options)
+        public RackManagementContext(DbContextOptions<RackManagementContext> options)
+        : base(options)
         {
         }
 
@@ -65,7 +60,7 @@ namespace Rack.MainInfrastructure.Data
 
             ConfigureEntityRelations(modelBuilder);
             ConfigureQueryFilters(modelBuilder);
-            ConfigureSoftDeleteGlobalFilter(modelBuilder);
+            //ConfigureSoftDeleteGlobalFilter(modelBuilder);
         }
 
         private void ConfigureEntityRelations(ModelBuilder modelBuilder)
@@ -113,15 +108,10 @@ namespace Rack.MainInfrastructure.Data
             }
         }
 
-        private void ConfigureSoftDeleteGlobalFilter(ModelBuilder modelBuilder)
-        {
-            // Additional soft delete configuration if needed
-        }
-
-
         private void UpdateAuditableEntities()
         {
             var utcNow = DateTime.UtcNow;
+            var currentUser = _userContext.GetUsername();
 
             foreach (var entry in ChangeTracker.Entries<IAuditInfo>())
             {
@@ -129,12 +119,12 @@ namespace Rack.MainInfrastructure.Data
                 {
                     case EntityState.Added:
                         entry.Entity.CreatedOn = utcNow;
-                        entry.Entity.CreatedBy = "";
+                        entry.Entity.CreatedBy = currentUser;
                         break;
 
                     case EntityState.Modified:
                         entry.Entity.LastModifiedOn = utcNow;
-                        entry.Entity.LastModifiedBy = "currentUser";
+                        entry.Entity.LastModifiedBy = currentUser;
                         break;
                 }
             }
@@ -143,6 +133,7 @@ namespace Rack.MainInfrastructure.Data
         private void HandleSoftDelete()
         {
             var utcNow = DateTime.UtcNow;
+            var currentUser = _userContext.GetUsername();
 
             foreach (var entry in ChangeTracker.Entries<ISoftDelete>())
             {
@@ -151,7 +142,7 @@ namespace Rack.MainInfrastructure.Data
                     entry.State = EntityState.Modified;
                     entry.Entity.IsDeleted = true;
                     entry.Entity.DeletedOn = utcNow;
-                    entry.Entity.DeletedBy = "currentUser";
+                    entry.Entity.DeletedBy = currentUser;
                 }
             }
         }

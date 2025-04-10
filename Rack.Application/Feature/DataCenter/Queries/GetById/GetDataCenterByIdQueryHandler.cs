@@ -1,5 +1,5 @@
 using Mapster;
-using Rack.Contracts.DataCenter.Responses;
+using Rack.Contracts.DataCenter.Response;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 

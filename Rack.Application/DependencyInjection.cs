@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
@@ -6,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Rack.Application.Commons.Behaviors;
 using System.Text;
+
 namespace Rack.Application;
 
 public static class DependencyInjection
@@ -14,8 +16,7 @@ public static class DependencyInjection
     {
         var assembly = typeof(DependencyInjection).Assembly;
 
-        // AutoMapper
-        services.AddAutoMapper(assembly);
+        services.AddSingleton<IMapper, Mapper>();
 
         // Validators (FluentValidation)
         services.AddValidatorsFromAssembly(assembly);
