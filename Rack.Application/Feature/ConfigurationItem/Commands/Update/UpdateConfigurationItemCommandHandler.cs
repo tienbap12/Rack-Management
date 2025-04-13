@@ -9,11 +9,19 @@ public class UpdateConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
     public async Task<Response> Handle(UpdateConfigurationItemCommand request, CancellationToken cancellationToken)
     {
         var configItemRepo = unitOfWork.GetRepository<Domain.Entities.ConfigurationItem>();
+        var deviceRepository = unitOfWork.GetRepository<Domain.Entities.Device>();
+
+        var device = await deviceRepository.GetByIdAsync(request.DeviceId, cancellationToken);
+        if (device == null || device.IsDeleted)
+        {
+            return Response.Failure(Error.NotFound("Không có thiết bị để chứa cấu hình này"));
+        }
+
         var existConfig = await configItemRepo.GetByIdAsync(request.Id, cancellationToken);
 
         if (existConfig == null || existConfig.IsDeleted)
         {
-            return Response.Failure(Error.NotFound("Configuration item not found"));
+            return Response.Failure(Error.NotFound("Không tìm thấy cấu hình"));
         }
 
         // Kiểm tra trùng lặp nếu thay đổi ConfigType
@@ -25,14 +33,12 @@ public class UpdateConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
 
             if (existingConfig != null)
             {
-                return Error.Conflict($"Configuration item with type '{request.ConfigType}' already exists for this device");
+                return Response.Failure(Error.Conflict($"Loại cấu hình đã tồn tại!"));
             }
         }
 
         existConfig.ConfigType = request.ConfigType;
         existConfig.ConfigValue = request.ConfigValue;
-        existConfig.LastModifiedBy = request.LastModifiedBy;
-        existConfig.LastModifiedOn = DateTime.UtcNow;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Response.Success();

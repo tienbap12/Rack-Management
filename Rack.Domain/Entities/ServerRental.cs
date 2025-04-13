@@ -9,8 +9,7 @@ public class ServerRental : Entity, IAuditInfo, ISoftDelete
     public Guid CustomerID { get; set; }
     public Guid DeviceID { get; set; }
     public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }    // NULL nếu vẫn đang thuê
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public DateTime? EndDate { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
     public string? DeletedBy { get; set; }

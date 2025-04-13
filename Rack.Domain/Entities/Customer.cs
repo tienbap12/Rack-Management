@@ -8,8 +8,7 @@ namespace Rack.Domain.Entities;
 public class Customer : Entity, IAuditInfo, ISoftDelete
 {
     public string Name { get; set; } = null!;
-    public string? ContactInfo { get; set; }
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public string? ContactInfo { get; set; } = string.Empty;
 
     // Quan hệ 1 - N với ServerRental
     public ICollection<ServerRental> ServerRentals { get; set; } = new List<ServerRental>();

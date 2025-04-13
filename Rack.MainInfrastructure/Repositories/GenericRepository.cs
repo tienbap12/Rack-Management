@@ -56,5 +56,11 @@ namespace Rack.MainInfrastructure.Repositories
             // Chỉ cần gọi Remove. Hook trong SaveChanges sẽ xử lý ISoftDelete.
             _dbSet.Remove(entity);
         }
+
+        public async Task DeleteRangeAsync(IQueryable<TEntity> query, CancellationToken cancellationToken)
+        {
+            var entities = await query.ToListAsync(cancellationToken);
+            _dbSet.RemoveRange(entities);
+        }
     }
 }

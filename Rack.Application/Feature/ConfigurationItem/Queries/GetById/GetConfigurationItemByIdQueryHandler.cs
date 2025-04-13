@@ -1,4 +1,4 @@
-using Mapster;
+﻿using Mapster;
 using Rack.Contracts.ConfigurationItem.Response;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
@@ -14,7 +14,7 @@ public class GetConfigurationItemByIdQueryHandler(IUnitOfWork unitOfWork) : IQue
 
         if (configItem == null || configItem.IsDeleted)
         {
-            return Response<ConfigurationItemResponse>.Failure(Error.NotFound("Configuration item not found"));
+            return Response<ConfigurationItemResponse>.Failure(Error.NotFound("Cấu hình không tồn tại"));
         }
 
         var result = configItem.Adapt<ConfigurationItemResponse>();

@@ -1,3 +1,5 @@
+using Rack.Domain.Enum;
+
 namespace Rack.Contracts.Device.Requests;
 
 public record CreateDeviceRequest(
@@ -9,5 +11,5 @@ public record CreateDeviceRequest(
     string? Manufacturer,
     string? SerialNumber,
     string? Model,
-    string Status = "Active"
-); 
+    string Status = StatusDevice.ACTIVE
+);

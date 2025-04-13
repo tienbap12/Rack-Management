@@ -10,6 +10,7 @@ using Rack.MainInfrastructure.Common.Authentication;
 using Rack.MainInfrastructure.Common.Cryptography;
 using Rack.MainInfrastructure.Data;
 using Rack.MainInfrastructure.Repositories;
+using Rack.MainInfrastructure.Services;
 
 namespace Rack.MainInfrastructure
 {
@@ -28,12 +29,13 @@ namespace Rack.MainInfrastructure
             services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<RackManagementContext>());
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IUserContext, UserContext>();
-
+            services.AddHostedService<TokenCleanupService>();
             //DI Authentication
             services.AddScoped<IJwtProvider, JwtProvider>();
             services.AddScoped<IPasswordHashChecker, PasswordHasher>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
-
+            services.AddScoped<IFileStorageService, MinioService>();
+            services.AddHttpClient<IZabbixService, ZabbixService>();
             return services;
         }
     }

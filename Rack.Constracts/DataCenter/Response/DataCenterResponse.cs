@@ -2,13 +2,11 @@
 
 namespace Rack.Contracts.DataCenter.Response;
 
-public class DataCenterResponse
+public record class DataCenterResponse
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; } = null!;
-    public string? Location { get; set; }
-    public DateTime CreatedDate { get; set; }
-
-    // Optional: If you want to include rack count or details
-    public ICollection<DeviceRackResponse> Racks { get; set; } = new List<DeviceRackResponse>();
+    public Guid Id { get; init; }
+    public string Name { get; init; } = null!;
+    public string? Location { get; init; }
+    public DateTime CreatedDate { get; init; }
+    public ICollection<DeviceRackResponse> Racks { get; init; } = new List<DeviceRackResponse>();
 }

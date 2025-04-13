@@ -35,15 +35,20 @@ internal class GetAllDataCenterQueryHandler(IUnitOfWork unitOfWork)
                 CreatedDate = dc.CreatedOn,
                 Racks = dc.Racks
                               .Where(r => !r.IsDeleted) // QUAN TRỌNG: Chỉ lấy các Rack chưa bị xóa
-                              .Select(r => new DeviceRackResponse // Chiếu DeviceRack sang DeviceRackResponse
-                              {
-                                  Id = r.Id,
-                                  DataCenterID = r.DataCenterID, // Gán nếu cần trong response
-                                  RackNumber = r.RackNumber,
-                                  Size = r.Size,
-                                  CreatedOn = r.CreatedOn // Ánh xạ từ CreatedOn của Rack
-                              })
-                              .ToList()
+                                                            .Select(r => new DeviceRackResponse(
+    r.Id,
+    r.DataCenterID,
+    r.RackNumber,
+    r.Size,
+    r.IsDeleted,
+    r.DeletedOn,
+    r.DeletedBy,
+    r.CreatedOn,
+    r.CreatedBy,
+    r.LastModifiedOn,
+    r.LastModifiedBy
+))
+.ToList()
             }).ToListAsync(cancellationToken);
 
             // Trả về response thành công

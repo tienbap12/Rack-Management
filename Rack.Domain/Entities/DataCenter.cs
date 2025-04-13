@@ -9,7 +9,6 @@ public class DataCenter : Entity, IAuditInfo, ISoftDelete
 {
     public string Name { get; set; } = null!;
     public string? Location { get; set; }
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     // Quan hệ 1 - N với Rack
     public ICollection<DeviceRack> Racks { get; set; } = new List<DeviceRack>();

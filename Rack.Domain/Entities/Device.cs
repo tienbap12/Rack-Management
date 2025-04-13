@@ -1,5 +1,6 @@
 ﻿using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Commons.Primitives;
+using Rack.Domain.Enum;
 using System;
 using System.Collections.Generic;
 
@@ -15,11 +16,11 @@ namespace Rack.Domain.Entities
         public string? Manufacturer { get; set; }
         public string? SerialNumber { get; set; }
         public string? Model { get; set; }
-        public string Status { get; set; } = "Active"; // Thêm cột Status
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public string Status { get; set; } = StatusDevice.ACTIVE; // Thêm cột Status
 
         // Quan hệ tự tham chiếu: 1 Device có thể có nhiềuAction state Device con
         public Device? ParentDevice { get; set; }
+
         public ICollection<Device> ChildDevices { get; set; } = new List<Device>();
 
         // Quan hệ với Rack

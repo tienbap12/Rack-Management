@@ -45,8 +45,6 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
             }
 
             request.Adapt(device);
-            device.LastModifiedOn = DateTime.UtcNow;
-            device.LastModifiedBy = "System"; // TODO: Thay bằng user thực tế
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 

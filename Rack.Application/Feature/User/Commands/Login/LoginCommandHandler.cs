@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Rack.Application.Commons.Abstractions;
 using Rack.Contracts.Authentication;
 using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Commons.Primitives;
@@ -14,54 +13,49 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
     public async Task<Response<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var accountRepo = unitOfWork.GetRepository<Account>();
-        var tokenRepo = unitOfWork.GetRepository<RefreshToken>();
+        var tokenRepo = unitOfWork.GetRepository<Domain.Entities.RefreshToken>();
 
-        var user = await accountRepo.BuildQuery.Include(r => r.Role).Where(x => x.Email == request.Email || x.Username == request.Email).FirstOrDefaultAsync(cancellationToken);
+        var user = await accountRepo.BuildQuery
+            .Include(r => r.Role)
+            .Where(x => x.Email == request.Email || x.Username == request.Email)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (user is null)
         {
-            return Response<AuthResponse>.Failure(Error.NotFound("Địa chỉ Email không tồn tại"));
+            return Response<AuthResponse>.Failure(Error.NotFound("Tài khoản không tồn tại"));
         }
+
         var isValidPass = passwordHashChecker.HashesMatch(request.Password, user);
         if (!isValidPass)
         {
             return Response<AuthResponse>.Failure(Error.Validation("Mật khẩu không đúng"));
         }
 
-        var token = jwtProvider.Generate(new Account
-        {
-            Id = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            Email = user.Email,
-            Password = user.Password,
-            DoB = user.DoB,
-            RoleId = user.RoleId,
-            Phone = user.Phone,
-            Role = new Domain.Entities.Role
-            {
-                Id = user.RoleId,
-                Name = user.Role.Name
-            }
-        });
+        // Generate tokens
+        var accessToken = jwtProvider.Generate(user, user.Role.Name);
+        var refreshToken = jwtProvider.GenerateRefreshToken();
 
-        var refreshToken = new RefreshToken()
+        // Save refresh token
+        var refreshTokenEntity = new Domain.Entities.RefreshToken
         {
             UserId = user.Id,
-            Token = token,
-            JwtId = Guid.NewGuid().ToString(),
+            Token = refreshToken,
+            JwtId = Guid.NewGuid().ToString(), // Optional: set to match JTI if needed
             IsUsed = false,
             IsRevoked = false,
-            ExpiryDate = DateTime.UtcNow.AddMonths(1)
+            ExpiryDate = DateTime.UtcNow.AddDays(7)
         };
-        await tokenRepo.CreateAsync(refreshToken, cancellationToken);
+
+        await tokenRepo.CreateAsync(refreshTokenEntity, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var result = new AuthResponse
         {
-            Token = token,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
             Role = user.Role.Name,
         };
+
         return Response<AuthResponse>.Success(result);
     }
 }

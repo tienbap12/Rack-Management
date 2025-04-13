@@ -4,5 +4,7 @@ namespace Rack.Domain.Commons.Abstractions;
 
 public interface IJwtProvider
 {
-    string Generate(Account req);
+    string Generate(Account req, string roleName);
+
+    string GenerateRefreshToken();
 }

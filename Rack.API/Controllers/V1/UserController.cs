@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Rack.API.Contracts;
 using Rack.Application.Feature.User.Commands.Login;
+using Rack.Application.Feature.User.Commands.RefreshToken;
 using Rack.Application.Feature.User.Commands.Register;
 using Rack.Contracts.Authentication;
 using System.Threading.Tasks;
@@ -23,6 +24,15 @@ public class UserController : ApiController
     public async Task<IActionResult> Register([FromBody] AuthRequest request)
     {
         var command = new RegisterCommand(request);
+        var result = await Mediator.Send(command);
+        return ToActionResult(result);
+    }
+
+    [HttpPost]
+    [Route(ApiRoutesV1.Account.RefreshToken)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        var command = new RefreshTokenCommand(request);
         var result = await Mediator.Send(command);
         return ToActionResult(result);
     }

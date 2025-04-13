@@ -16,7 +16,7 @@ public class CreateConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
         var device = await deviceRepo.GetByIdAsync(request.DeviceId, cancellationToken);
         if (device == null)
         {
-            return Response.Failure(Error.NotFound("Device not found"));
+            return Response.Failure(Error.NotFound("Không tìm thấy thiết bị này!"));
         }
 
         // Kiểm tra trùng lặp cấu hình trong cùng một device
@@ -26,13 +26,11 @@ public class CreateConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
 
         if (existingConfig != null)
         {
-            return Error.Conflict($"Configuration item with type '{request.ConfigType}' already exists for this device");
+            return Response.Failure(Error.Conflict($"Đã tồn tại '{request.ConfigType}' trên thiết bị này"));
         }
 
         // Mapping và tạo mới
         var newConfigItem = request.Adapt<Domain.Entities.ConfigurationItem>();
-        newConfigItem.CreatedOn = DateTime.UtcNow;
-        newConfigItem.CreatedDate = DateTime.UtcNow;
 
         await configItemRepo.CreateAsync(newConfigItem, cancellationToken);
 

@@ -1,7 +1,8 @@
+using Rack.Domain.Enum;
+
 namespace Rack.Contracts.Device.Requests;
 
 public record UpdateDeviceRequest(
-    Guid Id,
     Guid? ParentDeviceID,
     Guid? RackID,
     string? PositionInRack,
@@ -11,4 +12,4 @@ public record UpdateDeviceRequest(
     string? SerialNumber,
     string? Model,
     string Status
-); 
+);

@@ -19,5 +19,9 @@ public interface IGenericRepository<TEntity> where TEntity : Entity
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 
+    Task DeleteRangeAsync(
+        IQueryable<TEntity> query,
+        CancellationToken cancellationToken);
+
     IQueryable<TEntity> BuildQuery { get; }
 }

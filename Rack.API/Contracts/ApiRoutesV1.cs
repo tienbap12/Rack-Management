@@ -91,6 +91,8 @@ namespace Rack.API.Contracts
         {
             public const string Login = Base + "/login";
             public const string Register = Base + "/register";
+
+            public const string RefreshToken = Base + "/refresh-token";
         }
 
         public static class Role

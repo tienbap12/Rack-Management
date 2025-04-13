@@ -4,4 +4,4 @@ public record CreateDeviceRackRequest(
     Guid DataCenterID,
     string RackNumber,
     string? Size
-); 
+);
