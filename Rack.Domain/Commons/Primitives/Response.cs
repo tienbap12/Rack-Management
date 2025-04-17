@@ -14,7 +14,8 @@ public enum ErrorType
     Validation,
     Conflict,
     Unauthorized,
-    Forbidden
+    Forbidden,
+    InternalServerError
 }
 
 public sealed class Error(string code, string message, ErrorType type = ErrorType.Failure)
@@ -45,6 +46,9 @@ public sealed class Error(string code, string message, ErrorType type = ErrorTyp
 
     public static Error Forbidden(string code = "General.Forbidden", string message = "Forbidden access.")
         => new(code, message, ErrorType.Forbidden);
+
+    public static Error InternalServerError(string code = "General.InternalServerError", string message = "Internal Server Error.")
+        => new(code, message, ErrorType.InternalServerError);
 }
 
 public class Response

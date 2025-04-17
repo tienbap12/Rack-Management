@@ -2,192 +2,291 @@
 using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.ApiEndpoints;
-using Minio.DataModel.Args; // Namespace chứa các Args
+using Minio.DataModel.Args;
 using Minio.Exceptions;
-using Rack.Application.Commons.Interfaces;
+using Rack.Application.Commons.DTOs.Files;
+using Rack.Application.Commons.Interfaces; // Chứa các record domain: FileListItem, PresignedUrlResult
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reactive.Linq; // Cần cho ListObjectsAsync().ToList()
+using System.Reactive.Linq; // Dùng cho ForEachAsync
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Rack.MainInfrastructure.Services;
-
-public sealed class MinioService : IFileStorageService
+namespace Rack.MainInfrastructure.Services
 {
-    private readonly IMinioClient _minioClient;
-    private readonly ILogger<MinioService> _logger;
-    private readonly string _bucketName;
-
-    public MinioService(IConfiguration config, ILogger<MinioService> logger)
+    /// <summary>
+    /// Triển khai dịch vụ lưu trữ file sử dụng MinIO theo chuẩn DTO.
+    /// </summary>
+    public sealed class MinioService : IMinIOService
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly IMinioClient _minioClient;
+        private readonly ILogger<MinioService> _logger;
+        private readonly IConfiguration _config;
 
-        var endpoint = config["MinIO:Endpoint"];
-        var accessKey = config["MinIO:AccessKey"];
-        var secretKey = config["MinIO:SecretKey"];
-        _bucketName = config["MinIO:BucketName"] ?? throw new InvalidOperationException("MinIO:BucketName configuration missing.");
-        var useSsl = config.GetValue<bool?>("MinIO:UseSSL") ?? false; // Mặc định không dùng SSL nếu không rõ
+        public MinioService(IConfiguration config, ILogger<MinioService> logger)
+        {
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey))
-        {
-            _logger.LogError("MinIO configuration is incomplete. Check Endpoint, AccessKey, SecretKey, BucketName.");
-            throw new InvalidOperationException("MinIO configuration is incomplete.");
-        }
+            var endpoint = _config["MinIO:Endpoint"];
+            var accessKey = _config["MinIO:AccessKey"];
+            var secretKey = _config["MinIO:SecretKey"];
+            var useSsl = _config.GetValue<bool?>("MinIO:UseSSL") ?? false;
 
-        try
-        {
-            _minioClient = new MinioClient()
-                .WithEndpoint(endpoint)
-                .WithCredentials(accessKey, secretKey)
-                .WithSSL(useSsl)
-                .Build();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to initialize MinIO client.");
-            throw;
-        }
-    }
-
-    // Helper đảm bảo bucket tồn tại
-    private async Task EnsureBucketExistsAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            bool found = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(_bucketName), cancellationToken);
-            if (!found)
+            if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(accessKey) || string.IsNullOrEmpty(secretKey))
             {
-                _logger.LogWarning($"Bucket '{_bucketName}' not found. Attempting to create.");
-                await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(_bucketName), cancellationToken);
-                _logger.LogInformation($"Bucket '{_bucketName}' created successfully.");
+                _logger.LogError("Cấu hình MinIO chưa đầy đủ. Kiểm tra Endpoint, AccessKey, SecretKey.");
+                throw new InvalidOperationException("Cấu hình MinIO chưa đầy đủ.");
+            }
+
+            try
+            {
+                _minioClient = new MinioClient()
+                    .WithEndpoint(endpoint)
+                    .WithCredentials(accessKey, secretKey)
+                    .WithSSL(useSsl)
+                    .Build();
+                _logger.LogInformation("MinIO Client khởi tạo thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Khởi tạo MinIO client thất bại.");
+                throw;
             }
         }
-        catch (Exception ex)
+
+        /// <inheritdoc/>
+        public async Task<IEnumerable<BucketResponse>> ListBucketsAsync(CancellationToken cancellationToken = default)
         {
-            _logger.LogError(ex, $"Error ensuring bucket '{_bucketName}' exists.");
-            throw; // Ném lại lỗi để báo hiệu thất bại
+            _logger.LogInformation("Đang lấy danh sách bucket từ MinIO...");
+            try
+            {
+                var result = await _minioClient.ListBucketsAsync(cancellationToken).ConfigureAwait(false);
+                var bucketResponses = result.Buckets.Select(b => new BucketResponse(b.Name));
+                _logger.LogInformation("Lấy thành công {Count} bucket.", bucketResponses.Count());
+                return bucketResponses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách bucket từ MinIO.");
+                throw;
+            }
         }
-    }
 
-    public async Task<bool> DeleteFileAsync(string fileKey, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(fileKey)) return false;
-        _logger.LogInformation("Attempting to delete MinIO object: {FileKey} from bucket {BucketName}", fileKey, _bucketName);
-        try
+        /// <inheritdoc/>
+        public async Task<IEnumerable<FileListItemDto>> ListFilesAsync(string bucketName, string? prefix = null, CancellationToken cancellationToken = default)
         {
-            var args = new RemoveObjectArgs()
-                .WithBucket(_bucketName)
-                .WithObject(fileKey); // Object chính là fileKey
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new ArgumentNullException(nameof(bucketName));
 
-            await _minioClient.RemoveObjectAsync(args, cancellationToken);
-            _logger.LogInformation("Successfully deleted MinIO object: {FileKey}", fileKey);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to delete MinIO object: {FileKey}", fileKey);
-            // Có thể trả về false hoặc ném lỗi tùy theo yêu cầu xử lý lỗi
-            return false;
-            // throw;
-        }
-    }
+            _logger.LogInformation("Đang liệt kê object MinIO với prefix '{Prefix}' trong bucket {BucketName}", prefix ?? "gốc", bucketName);
+            var fileList = new List<FileListItem>(); // Sử dụng domain model để build dữ liệu
+            try
+            {
+                var args = new ListObjectsArgs()
+                    .WithBucket(bucketName)
+                    .WithPrefix(prefix)
+                    .WithRecursive(true); // Liệt kê đệ quy các file trong các thư mục con nếu có
 
-    public async Task<PresignedUrlResult> GeneratePresignedDownloadUrlAsync(string fileKey, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(fileKey)) throw new ArgumentNullException(nameof(fileKey));
-        _logger.LogInformation("Generating presigned download URL for: {FileKey} in bucket {BucketName}", fileKey, _bucketName);
-
-        try
-        {
-            // Thời gian hết hạn URL (ví dụ: 10 phút)
-            int expiry = 600; // seconds
-
-            var args = new PresignedGetObjectArgs()
-                .WithBucket(_bucketName)
-                .WithObject(fileKey)
-                .WithExpiry(expiry);
-
-            string presignedUrl = await _minioClient.PresignedGetObjectAsync(args).ConfigureAwait(false); // ConfigureAwait(false) tốt cho thư viện
-
-            _logger.LogInformation("Generated presigned download URL for {FileKey}", fileKey);
-            return new PresignedUrlResult(presignedUrl);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to generate presigned download URL for: {FileKey}", fileKey);
-            throw; // Ném lỗi để lớp Application/Api xử lý
-        }
-    }
-
-    public async Task<PresignedUrlResult> GeneratePresignedUploadUrlAsync(string fileName, string contentType, long fileSize, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(fileName)) throw new ArgumentNullException(nameof(fileName));
-        _logger.LogInformation("Generating presigned upload URL for: {FileName} ({ContentType}, {FileSize} bytes) in bucket {BucketName}", fileName, contentType, fileSize, _bucketName);
-
-        // TODO: Thêm logic kiểm tra fileSize nếu cần (ví dụ: giới hạn kích thước)
-
-        try
-        {
-            // Tạo key duy nhất (ví dụ) - Cần logic tốt hơn cho production
-            var fileKey = $"uploads/{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid()}-{Path.GetFileName(fileName)}"; // Đảm bảo fileKey hợp lệ
-
-            int expiry = 600; // URL hợp lệ trong 10 phút
-
-            var args = new PresignedPutObjectArgs()
-                .WithBucket(_bucketName)
-                .WithObject(fileKey)
-                .WithExpiry(expiry);
-            // .WithContentType(contentType); // Có thể thêm content type nếu cần
-
-            string presignedUrl = await _minioClient.PresignedPutObjectAsync(args).ConfigureAwait(false);
-
-            _logger.LogInformation("Generated presigned upload URL for key {FileKey}", fileKey);
-            // Trả về cả URL và Key để client biết lưu file vào đâu
-            return new PresignedUrlResult(presignedUrl, fileKey);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to generate presigned upload URL for: {FileName}", fileName);
-            throw;
-        }
-    }
-
-    public async Task<IEnumerable<FileListItem>> ListFilesAsync(string? prefix = null, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Listing MinIO objects with prefix '{Prefix}' in bucket {BucketName}", prefix ?? "root", _bucketName);
-        var fileList = new List<FileListItem>();
-        try
-        {
-            var args = new ListObjectsArgs()
-                .WithBucket(_bucketName)
-                .WithPrefix(prefix) // Lọc theo prefix (thư mục)
-                .WithRecursive(true); // Lấy tất cả các file trong prefix và thư mục con
-
-            // ListObjectsAsync trả về IObservable, cần dùng System.Reactive.Linq
-            await _minioClient.ListObjectsAsync(args, cancellationToken)
-                .ForEachAsync(item =>
-                {
-                    if (!item.IsDir) // Chỉ lấy file, bỏ qua thư mục
+                await _minioClient.ListObjectsAsync(args, cancellationToken)
+                    .ForEachAsync(item =>
                     {
-                        fileList.Add(new FileListItem(
-                            item.Key,
-                            (long)(item.Size), // Chuyển đổi ulong? sang long
-                            item.LastModifiedDateTime // Lấy DateTimeOffset?
-                        ));
-                    }
-                }, cancellationToken);
+                        if (!item.IsDir) // Bỏ qua mục đại diện thư mục
+                        {
+                            fileList.Add(new FileListItem(
+                                item.Key,
+                                (long)item.Size,
+                                item.LastModifiedDateTime
+                            ));
+                        }
+                    }, cancellationToken).ConfigureAwait(false);
 
-            _logger.LogInformation("Found {Count} files with prefix '{Prefix}'", fileList.Count, prefix ?? "root");
-            // Sắp xếp theo ngày sửa đổi giảm dần (mới nhất trước)
-            return fileList.OrderByDescending(f => f.LastModified ?? DateTimeOffset.MinValue);
+                _logger.LogInformation("Tìm thấy {Count} file với prefix '{Prefix}' trong bucket {BucketName}", fileList.Count, prefix ?? "gốc", bucketName);
+
+                // Sắp xếp theo ngày giảm dần và mapping từ domain sang DTO
+                return fileList
+                    .OrderByDescending(f => f.LastModified ?? DateTimeOffset.MinValue)
+                    .Select(file => new FileListItemDto(file));
+            }
+            catch (BucketNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Bucket không tồn tại khi liệt kê file: {BucketName}", bucketName);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi liệt kê object MinIO với prefix '{Prefix}' trong bucket {BucketName}", prefix ?? "gốc", bucketName);
+                throw;
+            }
         }
-        catch (Exception ex)
+
+        /// <inheritdoc/>
+        public async Task<PresignedUrlResultDto> GeneratePresignedUploadUrlAsync(string bucketName, string fileName, string contentType, long fileSize, CancellationToken cancellationToken = default)
         {
-            _logger.LogError(ex, "Failed to list MinIO objects with prefix '{Prefix}'", prefix ?? "root");
-            throw;
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new ArgumentNullException(nameof(bucketName));
+            if (string.IsNullOrWhiteSpace(fileName))
+                throw new ArgumentNullException(nameof(fileName));
+
+            _logger.LogInformation("Đang tạo URL upload cho: {FileName} ({ContentType}, {FileSize} bytes) vào bucket {BucketName}", fileName, contentType, fileSize, bucketName);
+
+            try
+            {
+                // Tạo file key duy nhất với folder 'uploads'
+                var fileKey = $"uploads/{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid()}-{Path.GetFileName(fileName)}";
+                int expiry = _config.GetValue<int?>("MinIO:PresignedUrlExpirySeconds") ?? 600; // Mặc định 10 phút
+
+                var args = new PresignedPutObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(fileKey)
+                    .WithExpiry(expiry);
+
+                string presignedUrl = await _minioClient.PresignedPutObjectAsync(args).ConfigureAwait(false);
+
+                _logger.LogInformation("Tạo thành công URL upload cho key {FileKey} trong bucket {BucketName}", fileKey, bucketName);
+
+                // Mapping domain result sang DTO
+                var domainResult = new PresignedUrlResult(presignedUrl, fileKey);
+                return new PresignedUrlResultDto(domainResult);
+            }
+            catch (BucketNotFoundException ex)
+            {
+                _logger.LogError(ex, "Bucket không tồn tại khi tạo URL upload: {BucketName}", bucketName);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo URL upload cho: {FileName} vào bucket {BucketName}", fileName, bucketName);
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<PresignedUrlResultDto> GeneratePresignedDownloadUrlAsync(string bucketName, string fileKey, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new ArgumentNullException(nameof(bucketName));
+            if (string.IsNullOrWhiteSpace(fileKey))
+                throw new ArgumentNullException(nameof(fileKey));
+
+            _logger.LogInformation("Đang tạo URL download cho: {FileKey} trong bucket {BucketName}", fileKey, bucketName);
+
+            try
+            {
+                int expiry = _config.GetValue<int?>("MinIO:PresignedUrlExpirySeconds") ?? 600;
+
+                var args = new PresignedGetObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(fileKey)
+                    .WithExpiry(expiry);
+
+                string presignedUrl = await _minioClient.PresignedGetObjectAsync(args).ConfigureAwait(false);
+
+                _logger.LogInformation("Tạo thành công URL download cho {FileKey} trong bucket {BucketName}", fileKey, bucketName);
+
+                var domainResult = new PresignedUrlResult(presignedUrl);
+                return new PresignedUrlResultDto(domainResult);
+            }
+            catch (BucketNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Bucket không tồn tại khi tạo URL download: {BucketName}", bucketName);
+                throw;
+            }
+            catch (ObjectNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Object không tồn tại khi tạo URL download: {FileKey} trong bucket {BucketName}", fileKey, bucketName);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo URL download cho: {FileKey} trong bucket {BucketName}", fileKey, bucketName);
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<bool> DeleteFileAsync(string bucketName, string fileKey, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new ArgumentNullException(nameof(bucketName));
+            if (string.IsNullOrWhiteSpace(fileKey))
+                throw new ArgumentNullException(nameof(fileKey));
+
+            _logger.LogInformation("Đang xóa object MinIO: {FileKey} từ bucket {BucketName}", fileKey, bucketName);
+
+            try
+            {
+                var args = new RemoveObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(fileKey);
+
+                await _minioClient.RemoveObjectAsync(args, cancellationToken).ConfigureAwait(false);
+                _logger.LogInformation("Xóa thành công object MinIO: {FileKey} từ bucket {BucketName}", fileKey, bucketName);
+                return true;
+            }
+            catch (BucketNotFoundException)
+            {
+                _logger.LogWarning("Bucket không tồn tại khi xóa file: {BucketName}", bucketName);
+                return false;
+            }
+            catch (ObjectNotFoundException)
+            {
+                _logger.LogWarning("Object không tồn tại khi cố gắng xóa: {FileKey} từ bucket {BucketName}. Coi như đã xóa.", fileKey, bucketName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa object MinIO: {FileKey} từ bucket {BucketName}", fileKey, bucketName);
+                return false;
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<string> UploadFileAsync(string bucketName, Stream fileStream, string fileName, string contentType, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new ArgumentNullException(nameof(bucketName));
+            if (fileStream == null || fileStream.Length == 0)
+                throw new ArgumentException("Stream file không được null hoặc rỗng.", nameof(fileStream));
+            if (string.IsNullOrWhiteSpace(fileName))
+                throw new ArgumentNullException(nameof(fileName));
+
+            // Tạo file key duy nhất với folder 'uploads'
+            var fileKey = $"uploads/{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid()}-{Path.GetFileName(fileName)}";
+
+            _logger.LogInformation("Đang upload file trực tiếp. Bucket: {BucketName}, Key: {FileKey}, Loại: {ContentType}, Kích thước: {Size}", bucketName, fileKey, contentType, fileStream.Length);
+
+            try
+            {
+                if (fileStream.CanSeek)
+                {
+                    fileStream.Seek(0, SeekOrigin.Begin);
+                }
+
+                var putObjectArgs = new PutObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(fileKey)
+                    .WithStreamData(fileStream)
+                    .WithObjectSize(fileStream.Length)
+                    .WithContentType(contentType);
+
+                var result = await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken).ConfigureAwait(false);
+
+                _logger.LogInformation("Upload file trực tiếp thành công. Bucket: {BucketName}, Key: {FileKey}, ETag: {ETag}", bucketName, fileKey, result.Etag);
+                return fileKey;
+            }
+            catch (BucketNotFoundException ex)
+            {
+                _logger.LogError(ex, "Bucket không tồn tại khi upload trực tiếp: {BucketName}", bucketName);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi upload file trực tiếp. Bucket: {BucketName}, Key dự định: {FileKey}", bucketName, fileKey);
+                throw;
+            }
         }
     }
 }

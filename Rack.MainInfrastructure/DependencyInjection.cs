@@ -34,7 +34,7 @@ namespace Rack.MainInfrastructure
             services.AddScoped<IJwtProvider, JwtProvider>();
             services.AddScoped<IPasswordHashChecker, PasswordHasher>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
-            services.AddScoped<IFileStorageService, MinioService>();
+            services.AddScoped<IMinIOService, MinioService>();
             services.AddHttpClient<IZabbixService, ZabbixService>();
             return services;
         }

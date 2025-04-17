@@ -13,7 +13,7 @@ namespace Rack.API.Options
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "Sell Ticket System API",
+                    Title = "Rack Manage API",
                     Version = "v1",
                     Contact = new OpenApiContact
                     {

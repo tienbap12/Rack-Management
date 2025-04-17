@@ -30,7 +30,7 @@ namespace Rack.MainInfrastructure.Common.Authentication
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             new Claim(JwtRegisteredClaimNames.Name, req.FullName),
             new Claim(JwtRegisteredClaimNames.UniqueName, req.Username),
-            new Claim(ClaimTypes.Role, roleName),
+            new Claim("Role", roleName),
         };
 
             var token = new JwtSecurityToken(
@@ -40,7 +40,7 @@ namespace Rack.MainInfrastructure.Common.Authentication
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(
                     new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature));
+                    SecurityAlgorithms.HmacSha256));
             var jwtToken = jwtTokenHandler.WriteToken(token);
             return jwtToken;
         }

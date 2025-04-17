@@ -9,6 +9,7 @@ internal class CreateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
 {
     public async Task<Response> Handle(CreateDataCenterCommand request, CancellationToken cancellationToken)
     {
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
         var dcRepo = unitOfWork.GetRepository<Domain.Entities.DataCenter>();
 
         // Kiểm tra trùng lặp
@@ -26,13 +27,7 @@ internal class CreateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
         // Mapping và tạo mới
         var newDC = request.Adapt<Domain.Entities.DataCenter>();
         await dcRepo.CreateAsync(newDC, cancellationToken);
-
-        // Lưu changes
-        if (await unitOfWork.SaveChangesAsync(cancellationToken) == 0)
-        {
-            return Error.Validation("Failed to save data center");
-        }
-
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Response.Success();
     }
 }

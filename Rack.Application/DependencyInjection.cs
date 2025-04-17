@@ -47,11 +47,13 @@ public static class DependencyInjection
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = configuration["Jwt:Issuer"],
-                ValidAudience = configuration["Jwt:Audience"],
+
+                ValidIssuer = configuration["JwtSettings:Issuer"],
+                ValidAudience = configuration["JwtSettings:Audience"],
                 IssuerSigningKey = new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(configuration["Jwt:SecurityKey"])
-                )
+                        Encoding.UTF8.GetBytes(configuration["JwtSettings:SecurityKey"])
+                    ),
+                RoleClaimType = "Role",
             };
         });
 

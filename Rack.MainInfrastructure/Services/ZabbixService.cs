@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using Rack.Application.Commons.Interfaces;
+using Rack.Contracts.Zabbix;
+using Rack.MainInfrastructure.Services.Monitoring;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Rack.Application.Commons.Interfaces;
-using Rack.MainInfrastructure.Services.Monitoring;
 
 namespace Rack.MainInfrastructure.Services;
 
@@ -30,7 +30,7 @@ public sealed class ZabbixService : IZabbixService
     {
         var parameters = new
         {
-            output = new[] { "hostid", "name", "status", "available" },
+            output = new[] { "hostid", "name", "status", "available", "proxy_hostid" },
             filter = new
             {
                 status = "0" // Giả sử "0" là host đang hoạt động (theo cấu hình Zabbix)
@@ -55,7 +55,7 @@ public sealed class ZabbixService : IZabbixService
         var parameters = new
         {
             output = "extend",
-            sortfield = "eventid",  // Sửa lại thành "eventid" theo yêu cầu của API
+            sortfield = "eventid",
             sortorder = "DESC",
             limit,
             filter = new
@@ -84,7 +84,6 @@ public sealed class ZabbixService : IZabbixService
             selectGroups = new[] { "name" },
             selectTemplates = new[] { "name" },
             selectInterfaces = new[] { "ip" },
-            // Nếu cần lấy thêm các item hoặc thông tin khác thì thêm các field tương ứng
         };
 
         // API host.get trả về một mảng
@@ -105,7 +104,7 @@ public sealed class ZabbixService : IZabbixService
             hostDetail = hostDetail with { RecentProblems = problems.ToList() };
 
             // Lấy thông tin các resource items cho host nếu cần
-            var resources = await GetHostResourceItemsAsync(hostId, new[] { "system.cpu.load", "system.mem.free" }, cancellationToken);
+            var resources = await GetHostResourceItemsAsync(hostId, new[] { "dell.server.hw.cpu1.model[systemModelName]", "dell.server.hw.cpu2.model[systemModelName]", "dell.server.hw.model[systemModelName]", "dell.server.hw.diskarray.model[controllerName.1]" }, cancellationToken);
             hostDetail = hostDetail with { Resources = resources };
         }
 
@@ -114,25 +113,53 @@ public sealed class ZabbixService : IZabbixService
 
     // Lấy danh sách các vấn đề của host cụ thể
     public async Task<IEnumerable<ZabbixProblemInfo>> GetProblemsByHostAsync(
-string hostId,
-CancellationToken cancellationToken = default)
+    string hostId,
+    CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(hostId))
+        {
+            return Enumerable.Empty<ZabbixProblemInfo>();
+        }
+
+        // Use problem.get with hostids filter directly
         var parameters = new
         {
-            output = "extend",
+            // Specify the fields needed for ZabbixProblemInfo
+            output = new[] {
+                "eventid",
+                "name",
+                "severity",
+                "clock",
+                "acknowledged"
+            },
             hostids = new[] { hostId },
-            sortfield = "eventid",
-            sortorder = "DESC"
+            sortfield = "eventid", // Sort by time
+            sortorder = "DESC" // Newest problems first
         };
 
-        return await ZabbixApiHelper.SendRequestAsync<IEnumerable<ZabbixProblemInfo>>(
-            _httpClient,
-            _apiUrl,
-            _apiToken,
-            "problem.get",
-            parameters,
-            cancellationToken
-        );
+        try
+        {
+            var problems = await ZabbixApiHelper.SendRequestAsync<IEnumerable<ZabbixProblemInfo>>(
+                _httpClient,
+                _apiUrl,
+                _apiToken,
+                "problem.get", // Use the problem.get method
+                parameters,
+                cancellationToken
+            );
+
+            // Handle potential null return from helper, although returning empty list is preferred
+            if (problems == null)
+            {
+                return Enumerable.Empty<ZabbixProblemInfo>();
+            }
+
+            return problems;
+        }
+        catch (Exception ex)
+        {
+            return Enumerable.Empty<ZabbixProblemInfo>(); // Safest default for IEnumerable
+        }
     }
 
     // Lấy giá trị của các item cụ thể theo key cho host
@@ -160,8 +187,34 @@ CancellationToken cancellationToken = default)
 
         return items.ToDictionary(item => item.Key, item => item.LastValue);
     }
+
+    private async Task<IEnumerable<string>> GetTriggerIdsByHostAsync(
+    string hostId,
+    CancellationToken cancellationToken = default)
+    {
+        var parameters = new
+        {
+            output = new[] { "triggerid" },
+            hostids = new[] { hostId }
+        };
+
+        var triggers = await ZabbixApiHelper.SendRequestAsync<IEnumerable<ZabbixTriggerDto>>(
+            _httpClient,
+            _apiUrl,
+            _apiToken,
+            "trigger.get",
+            parameters,
+            cancellationToken
+        );
+
+        return triggers.Select(t => t.TriggerId);
+    }
 }
 
+// DTO cho trigger
+internal record ZabbixTriggerDto(
+    [property: JsonPropertyName("triggerid")] string TriggerId
+);
 // DTO nội bộ để mapping thông tin Item từ API Zabbix
 internal record ZabbixItemDto(
     [property: JsonPropertyName("itemid")] string ItemId,
