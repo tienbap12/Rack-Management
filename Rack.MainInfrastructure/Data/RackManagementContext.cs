@@ -112,7 +112,7 @@ namespace Rack.MainInfrastructure.Data
         {
             var utcNow = DateTime.UtcNow;
             var currentUser = _userContext.GetUsername();
-
+            Console.WriteLine($"Current User: {currentUser}");
             foreach (var entry in ChangeTracker.Entries<IAuditInfo>())
             {
                 switch (entry.State)
@@ -135,7 +135,7 @@ namespace Rack.MainInfrastructure.Data
             var utcNow = DateTime.UtcNow;
             var currentUser = _userContext.GetUsername();
 
-            foreach (var entry in ChangeTracker.Entries<ISoftDelete>())
+           foreach (var entry in ChangeTracker.Entries<ISoftDelete>())
             {
                 if (entry.State == EntityState.Deleted)
                 {

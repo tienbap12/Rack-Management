@@ -10,13 +10,16 @@ namespace Rack.Domain.Entities
     {
         public Guid? ParentDeviceID { get; set; }  // NULL cho thiết bị cấp cao nhất
         public Guid? RackID { get; set; }          // NULL cho blade server trong chassis
+        public int Size { get; set; }
+        public string Name { get; set; }
+        public string IpAddress { get; set; }
         public string? PositionInRack { get; set; }  // Ví dụ: 'U1', 'U10-U20'
         public string? SlotInParent { get; set; }    // Ví dụ: 'Slot1' cho blade server
         public string DeviceType { get; set; } = null!;   // Ví dụ: 'Server', 'Switch', 'SAN', 'BladeChassis'
         public string? Manufacturer { get; set; }
         public string? SerialNumber { get; set; }
         public string? Model { get; set; }
-        public string Status { get; set; } = StatusDevice.ACTIVE; // Thêm cột Status
+        public string Status { get; set; } = StatusDevice.ACTIVE;
 
         // Quan hệ tự tham chiếu: 1 Device có thể có nhiềuAction state Device con
         public Device? ParentDevice { get; set; }

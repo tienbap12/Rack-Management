@@ -1,8 +1,9 @@
-﻿using Rack.Contracts.DeviceRack.Response;
+﻿using Rack.Contracts.Audit;
+using Rack.Contracts.DeviceRack.Response;
 
 namespace Rack.Contracts.DataCenter.Response;
 
-public record class DataCenterResponse
+public record DataCenterResponse : BaseAuditDto
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = null!;

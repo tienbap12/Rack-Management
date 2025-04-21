@@ -1,8 +1,10 @@
-﻿namespace Rack.Contracts.Customer.Response;
+﻿using Rack.Contracts.Audit;
 
-public record CustomerResponse(
-    Guid Id,
-    string Name,
-    string? ContactInfo,
-    DateTime CreatedDate
-);
+namespace Rack.Contracts.Customer.Response;
+
+public record CustomerResponse : BaseAuditDto
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; }
+    public string? ContactInfo { get; init; }
+}

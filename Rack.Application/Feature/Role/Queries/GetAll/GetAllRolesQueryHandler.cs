@@ -11,15 +11,20 @@ public class GetAllRolesQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler<Get
     public async Task<Response<List<RoleResponse>>> Handle(GetAllRolesQuery request, CancellationToken cancellationToken)
     {
         var roles = unitOfWork.GetRepository<Domain.Entities.Role>();
-        var roleResponses = await roles.BuildQuery.Select(r => new RoleResponse(
-            r.Id,
-            r.Name,
-            r.Status,
-            r.CreatedOn,
-            r.LastModifiedOn,
-            r.CreatedBy,
-            r.LastModifiedBy
-        )).ToListAsync();
+        var roleResponses = await roles.BuildQuery
+            .Select(r => new RoleResponse
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Status = r.Status,
+                CreatedOn = r.CreatedOn,
+                CreatedBy = r.CreatedBy,
+                LastModifiedOn = r.LastModifiedOn,
+                LastModifiedBy = r.LastModifiedBy,
+                IsDeleted = r.IsDeleted,
+                DeletedOn = r.DeletedOn,
+                DeletedBy = r.DeletedBy
+            }).ToListAsync();
 
         return Response<List<RoleResponse>>.Success(roleResponses);
     }

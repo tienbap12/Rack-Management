@@ -1,6 +1,4 @@
-﻿using Rack.Contracts.Zabbix;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using Rack.Application.Commons.DTOs.Zabbix;
 
 namespace Rack.Application.Commons.Interfaces;
 
@@ -17,5 +15,3 @@ public interface IZabbixService
 
     Task<Dictionary<string, string>> GetHostResourceItemsAsync(string hostId, IEnumerable<string> itemKeys, CancellationToken cancellationToken = default);
 }
-
-// Converter từ "0"/"1" hoặc chuỗi "true"/"false" thành bool

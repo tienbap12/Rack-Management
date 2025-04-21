@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Rack.Contracts.Zabbix
+namespace Rack.Application.Commons.DTOs.Zabbix
 {
     public record ZabbixProblemInfo
     {

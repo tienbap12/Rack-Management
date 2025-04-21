@@ -5,6 +5,9 @@ namespace Rack.Contracts.Device.Requests;
 public record CreateDeviceRequest(
     Guid? ParentDeviceID,
     Guid? RackID,
+    int Size,
+    string Name,
+    string IpAddress,
     string? PositionInRack,
     string? SlotInParent,
     string DeviceType,

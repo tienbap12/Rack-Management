@@ -14,7 +14,8 @@ namespace Rack.MainInfrastructure.Common.Authentication
 
         public string GetUsername()
         {
-            return _httpContextAccessor.HttpContext?.User?.Claims?.FirstOrDefault(c => c.Type == "unique_name")?.Value;
+            return _httpContextAccessor.HttpContext?.User?.Claims?
+                .FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
         }
     }
 }

@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Rack.Application.Commons.DTOs;
+using Rack.Application.Commons.DTOs.Zabbix;
 using Rack.Application.Commons.Interfaces;
-using Rack.Contracts.Zabbix;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Enum;
 using System;

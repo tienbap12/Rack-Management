@@ -1,4 +1,4 @@
-﻿namespace Rack.Contracts.Zabbix
+﻿namespace Rack.Application.Commons.DTOs.Zabbix
 {
     public record ZabbixHostDetail(
         string HostId,

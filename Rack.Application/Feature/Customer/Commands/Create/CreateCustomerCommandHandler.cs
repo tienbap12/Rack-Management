@@ -13,7 +13,6 @@ namespace Rack.Application.Feature.Customer.Commands.Create
             var newCustomer = request.Adapt<Domain.Entities.Customer>();
             await customerRepo.CreateAsync(newCustomer, cancellationToken);
 
-            // L?u changes
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             return Response.Success();

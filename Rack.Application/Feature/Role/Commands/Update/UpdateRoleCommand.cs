@@ -8,5 +8,4 @@ public class UpdateRoleCommand(Guid roleId, UpdateRoleRequest _request) : IComma
     public Guid Id => roleId;
     public string Name => _request.Name;
     public string Status => _request.Status;
-    public string LastModifiedBy => _request.LastModifiedBy;
 }

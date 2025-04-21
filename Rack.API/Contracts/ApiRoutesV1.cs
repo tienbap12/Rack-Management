@@ -82,7 +82,7 @@ namespace Rack.API.Contracts
 
             public const string GetAll = ControllerBase;
             public const string Create = ControllerBase;
-            public const string GetById = ControllerBase + "/{configItemId:guid}";
+            public const string GetByDeviceId = ControllerBase + "/{deviceId:guid}";
             public const string Update = ControllerBase + "/{configItemId:guid}";
             public const string Delete = ControllerBase + "/{configItemId:guid}";
         }

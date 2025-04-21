@@ -1,11 +1,15 @@
-﻿namespace Rack.Contracts.ServerRental.Response;
+﻿using Rack.Contracts.Audit;
 
-public record ServerRentalResponse(
-    Guid Id,
-    Guid CustomerID,
-    Guid DeviceID,
-    string CustomerName,
-    string DeviceName,
-    DateTime StartDate,
-    DateTime? EndDate
-);
+namespace Rack.Contracts.ServerRental.Response;
+
+public record ServerRentalResponse
+ : BaseAuditDto
+{
+    public Guid Id { get; init; }
+    public Guid CustomerID { get; init; }
+    public Guid DeviceID { get; init; }
+    public string CustomerName { get; init; }
+    public string DeviceName { get; init; }
+    public DateTime StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
+}

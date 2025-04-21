@@ -1,15 +1,11 @@
-﻿namespace Rack.Contracts.DeviceRack.Response;
+﻿using Rack.Contracts.Audit;
 
-public record DeviceRackResponse(
- Guid Id,
- Guid DataCenterID,
- string RackNumber,
- string? Size,
- bool IsDeleted,
- DateTime? DeletedOn,
- string? DeletedBy,
- DateTime CreatedOn,
- string CreatedBy,
- DateTime? LastModifiedOn,
- string LastModifiedBy
-);
+namespace Rack.Contracts.DeviceRack.Response;
+
+public record DeviceRackResponse : BaseAuditDto
+{
+    public Guid Id { get; init; }
+    public Guid DataCenterID { get; init; }
+    public string RackNumber { get; init; }
+    public string? Size { get; init; }
+}

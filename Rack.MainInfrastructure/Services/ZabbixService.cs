@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Rack.Application.Commons.DTOs.Zabbix;
 using Rack.Application.Commons.Interfaces;
-using Rack.Contracts.Zabbix;
 using Rack.MainInfrastructure.Services.Monitoring;
 using System;
 using System.Collections.Generic;

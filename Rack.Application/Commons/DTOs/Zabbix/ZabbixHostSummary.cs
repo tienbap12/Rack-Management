@@ -1,4 +1,4 @@
-﻿namespace Rack.Contracts.Zabbix
+﻿namespace Rack.Application.Commons.DTOs.Zabbix
 {
     // Record cơ sở
     public record ZabbixHostSummary(

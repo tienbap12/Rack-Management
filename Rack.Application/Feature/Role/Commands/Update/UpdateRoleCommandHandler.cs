@@ -5,8 +5,6 @@ namespace Rack.Application.Feature.Role.Commands.Update;
 
 public class UpdateRoleCommandHandler(IUnitOfWork unitOfWork) : ICommandHandler<UpdateRoleCommand, Response>
 {
-
-
     public async Task<Response> Handle(UpdateRoleCommand request, CancellationToken cancellationToken)
     {
         var roleRepository = unitOfWork.GetRepository<Domain.Entities.Role>();
@@ -18,8 +16,6 @@ public class UpdateRoleCommandHandler(IUnitOfWork unitOfWork) : ICommandHandler<
 
         role.Name = request.Name;
         role.Status = request.Status;
-        role.LastModifiedBy = request.LastModifiedBy;
-        role.LastModifiedOn = DateTime.UtcNow;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
