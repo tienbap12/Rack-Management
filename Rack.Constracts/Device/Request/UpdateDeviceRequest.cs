@@ -7,12 +7,12 @@ public record UpdateDeviceRequest(
     Guid? RackID,
     int? Size,
     string? Name,
-    string? IpAddress,
-    string? PositionInRack,
+    int? UPosition,
     string? SlotInParent,
-    string DeviceType,
+    string? DeviceType,
+    string? IpAddress,
     string? Manufacturer,
     string? SerialNumber,
     string? Model,
-    string Status
+    DeviceStatus? Status
 );

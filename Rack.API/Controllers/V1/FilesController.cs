@@ -9,12 +9,13 @@ using Rack.Domain.Enum;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Rack.API.Controllers
 {
     [ApiController]
-    [Route("api/files")]
+    [Route("api/v1/files")]
     public class FileController : ControllerBase
     {
         private readonly IMinIOService _minioService;
@@ -41,7 +42,7 @@ namespace Rack.API.Controllers
                 if (!ModelState.IsValid)
                 {
                     var error = new ErrorDto(
-                        "ValidationError",
+                        HttpStatusCodeEnum.BadRequest,
                         "Dữ liệu đầu vào không hợp lệ",
                         ErrorType.Failure);
                     return new FailureApiResponseDto(
@@ -64,7 +65,7 @@ namespace Rack.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo URL upload");
-                var error = new ErrorDto("UploadUrlError", ex.Message, ErrorType.InternalServerError);
+                var error = new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError);
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi tạo URL upload",
                     HttpStatusCodeEnum.InternalServerError,
@@ -91,7 +92,7 @@ namespace Rack.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo URL download");
-                var error = new ErrorDto("DownloadUrlError", ex.Message, ErrorType.InternalServerError);
+                var error = new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError);
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi tạo URL download",
                     HttpStatusCodeEnum.InternalServerError,
@@ -116,7 +117,7 @@ namespace Rack.API.Controllers
                     : new FailureApiResponseDto(
                         "Xóa file thất bại",
                         HttpStatusCodeEnum.BadRequest,
-                        new ErrorDto("DeleteError", "Không tìm thấy file hoặc bucket", ErrorType.Failure));
+                        new ErrorDto(HttpStatusCodeEnum.NotFound, "Không tìm thấy file hoặc bucket", ErrorType.Failure));
             }
             catch (Exception ex)
             {
@@ -124,7 +125,7 @@ namespace Rack.API.Controllers
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi xóa file",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("DeleteError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -156,7 +157,7 @@ namespace Rack.API.Controllers
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi upload file",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("UploadError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -180,7 +181,7 @@ namespace Rack.API.Controllers
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy danh sách bucket",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("BucketListError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -206,7 +207,32 @@ namespace Rack.API.Controllers
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy danh sách file",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("FileListError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
+            }
+        }
+
+        [HttpGet("prefixes")] // Route mới
+        public async Task<ActionResult<ApiResponseBaseDto>> ListPrefixes(
+       [FromQuery][Required] string bucketName,
+       [FromQuery] string? prefix = null, // Prefix hiện tại để lấy thư mục con của nó
+       CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var prefixes = await _minioService.ListPrefixesAsync(bucketName, prefix, cancellationToken);
+                // Trả về SuccessApiResponseDto chứa List<string>
+                return new SuccessApiResponseDto<IEnumerable<PrefixResponse>>(
+                    "Lấy danh sách prefix thành công",
+                    HttpStatusCodeEnum.OK,
+                    prefixes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách prefix");
+                return new FailureApiResponseDto(
+                    "Lỗi hệ thống khi lấy danh sách prefix",
+                    HttpStatusCodeEnum.InternalServerError,
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
     }

@@ -14,7 +14,7 @@ namespace Rack.Application.Feature.Customer.Queries.GetById
 
             if (customer == null)
             {
-                return Response<CustomerResponse>.Failure(Error.NotFound("Customer not found"));
+                return Response<CustomerResponse>.Failure(Error.NotFound());
             }
 
             var result = customer.Adapt<CustomerResponse>();

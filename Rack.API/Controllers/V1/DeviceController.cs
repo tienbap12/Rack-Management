@@ -1,15 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Rack.API.Contracts;
-using Rack.Application.Feature.DataCenter.Commands.Delete;
-using Rack.Application.Feature.DataCenter.Commands.Update;
 using Rack.Application.Feature.Device.Commands.Create;
 using Rack.Application.Feature.Device.Commands.Delete;
 using Rack.Application.Feature.Device.Commands.Update;
 using Rack.Application.Feature.Device.Queries.GetAll;
 using Rack.Application.Feature.Device.Queries.GetById;
-using Rack.Contracts.DataCenter.Requests;
 using Rack.Contracts.Device.Requests;
+using Rack.Domain.Enum;
 using System;
 using System.Threading.Tasks;
 
@@ -19,9 +17,9 @@ public class DeviceController : ApiController
 {
     [HttpGet]
     [Route(ApiRoutesV1.Device.GetAll)]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] Guid? rackId, [FromQuery] DeviceStatus? status)
     {
-        var query = new GetAllDeviceQuery();
+        var query = new GetAllDeviceQuery(rackId, status);
         var result = await Mediator.Send(query);
         return ToActionResult(result);
     }

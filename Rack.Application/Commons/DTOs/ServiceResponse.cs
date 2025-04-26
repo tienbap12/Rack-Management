@@ -9,17 +9,17 @@ namespace Rack.Application.Commons.DTOs
     /// </summary>
     public class ErrorDto
     {
-        public string Code { get; set; }
+        public HttpStatusCodeEnum Code { get; set; }
         public string Message { get; set; }
         public ErrorType Type { get; set; }
 
-        public ErrorDto(string code, string message, ErrorType type)
+        public ErrorDto(HttpStatusCodeEnum code, string message, ErrorType type)
         {
             Code = code; Message = message; Type = type;
         }
 
         // Constructor để map từ Error domain nếu cần
-        public ErrorDto(Error domainError) : this(domainError.Code, domainError.Message, domainError.Type) { }
+        public ErrorDto(Error domainError) : this(HttpStatusCodeEnum.BadRequest, domainError.Message, domainError.Type) { }
     }
 
     /// <summary>

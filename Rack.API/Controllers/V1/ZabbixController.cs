@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 namespace Rack.API.Controllers.V1
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/zabbix")]
     public class ZabbixController : ControllerBase
     {
         private readonly IZabbixService _zabbixService;
@@ -50,7 +50,7 @@ namespace Rack.API.Controllers.V1
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy danh sách host",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("HostListError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -70,7 +70,7 @@ namespace Rack.API.Controllers.V1
                     ? new FailureApiResponseDto(
                         "Không tìm thấy host",
                         HttpStatusCodeEnum.NotFound,
-                        new ErrorDto("HostNotFound", $"Host ID {hostId} không tồn tại", ErrorType.Failure))
+                        new ErrorDto(HttpStatusCodeEnum.InternalServerError, $"Host ID {hostId} không tồn tại", ErrorType.Failure))
                     : new SuccessApiResponseDto<ZabbixHostDetail>(
                         "Lấy chi tiết host thành công",
                         HttpStatusCodeEnum.OK,
@@ -82,7 +82,7 @@ namespace Rack.API.Controllers.V1
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy chi tiết host",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("HostDetailError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -108,7 +108,7 @@ namespace Rack.API.Controllers.V1
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy vấn đề",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("HostProblemError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -128,7 +128,7 @@ namespace Rack.API.Controllers.V1
                     return new FailureApiResponseDto(
                         "Giới hạn không hợp lệ",
                         HttpStatusCodeEnum.BadRequest,
-                        new ErrorDto("InvalidLimit", "Limit phải từ 1 đến 1000", ErrorType.Failure));
+                        new ErrorDto(HttpStatusCodeEnum.InternalServerError, "Limit phải từ 1 đến 1000", ErrorType.Failure));
                 }
 
                 var problems = await _zabbixService.GetRecentProblemsAsync(
@@ -147,7 +147,7 @@ namespace Rack.API.Controllers.V1
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy vấn đề",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("RecentProblemError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
 
@@ -167,7 +167,7 @@ namespace Rack.API.Controllers.V1
                     return new FailureApiResponseDto(
                         "Thiếu tham số bắt buộc",
                         HttpStatusCodeEnum.BadRequest,
-                        new ErrorDto("MissingKeys", "Danh sách item keys không được rỗng", ErrorType.Failure));
+                        new ErrorDto(HttpStatusCodeEnum.InternalServerError, "Danh sách item keys không được rỗng", ErrorType.Failure));
                 }
 
                 var resources = await _zabbixService.GetHostResourceItemsAsync(
@@ -186,8 +186,18 @@ namespace Rack.API.Controllers.V1
                 return new FailureApiResponseDto(
                     "Lỗi hệ thống khi lấy tài nguyên",
                     HttpStatusCodeEnum.InternalServerError,
-                    new ErrorDto("ResourceError", ex.Message, ErrorType.InternalServerError));
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
+        }
+        [HttpGet("{hostId}/deviceType")]
+        public async Task<ActionResult<string>> GetDeviceType(string hostId, CancellationToken cancellationToken)
+        {
+            var deviceType = await _zabbixService.GetDeviceTypeAsync(hostId, cancellationToken);
+            if (deviceType == null)
+            {
+                return NotFound();
+            }
+            return Ok(deviceType);
         }
     }
 }

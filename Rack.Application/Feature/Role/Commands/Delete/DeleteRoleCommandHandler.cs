@@ -13,12 +13,12 @@ public class DeleteRoleCommandHandler(IUnitOfWork _unitOfWork) : ICommandHandler
         var role = await roleRepository.GetByIdAsync(request.Id, cancellationToken);
         if (role == null)
         {
-            return Response.Failure(Error.NotFound("Không tìm thấy Role này!"));
+            return Response.Failure(Error.NotFound());
         }
         var existedUserHaveRole = await roleRepository.BuildQuery.Include(a => a.Accounts).AnyAsync(a => a.Accounts.Any(a => a.RoleId == role.Id), cancellationToken);
         if (existedUserHaveRole)
         {
-            return Response.Failure("Không thể xóa quyền này vì có người dùng đang sử dụng quyền này!");
+            return Response.Failure(Error.BadRequest());
         }
 
         await roleRepository.DeleteAsync(role.Id, cancellationToken);

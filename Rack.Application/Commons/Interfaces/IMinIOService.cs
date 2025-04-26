@@ -5,6 +5,7 @@ namespace Rack.Application.Commons.Interfaces;
 public record FileListItem(string Key, long Size, DateTimeOffset? LastModified);
 public record PresignedUrlResult(string Url, string? FileKey = null); // FileKey cho upload
 public record BucketResponse(string Name);
+public record PrefixResponse(string Prefix);
 
 public interface IMinIOService
 {
@@ -37,4 +38,6 @@ public interface IMinIOService
     /// Liệt kê các file trong một bucket cụ thể.
     /// </summary>
     Task<IEnumerable<FileListItemDto>> ListFilesAsync(string bucketName, string? prefix = null, CancellationToken cancellationToken = default);
+
+    Task<IEnumerable<PrefixResponse>> ListPrefixesAsync(string bucketName, string? currentPrefix = null, CancellationToken cancellationToken = default);
 }

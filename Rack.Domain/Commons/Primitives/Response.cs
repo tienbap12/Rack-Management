@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Rack.Domain.Entities;
 using Rack.Domain.Enum;
 
 namespace Rack.Domain.Commons.Primitives;
@@ -14,40 +15,44 @@ public enum ErrorType
     Validation,
     Conflict,
     Unauthorized,
+    BadRequest,
     Forbidden,
     InternalServerError
 }
 
-public sealed class Error(string code, string message, ErrorType type = ErrorType.Failure)
+public sealed class Error(ErrorCode code, string message, ErrorType type = ErrorType.Failure)
 {
-    public static readonly Error None = new(string.Empty, string.Empty, ErrorType.Failure);
+    public static readonly Error None = new(ErrorCode.None, string.Empty, ErrorType.Failure);
 
-    public string Code { get; } = code;
+    public ErrorCode Code { get; } = code;
     public string Message { get; } = message;
     public ErrorType Type { get; } = type;
 
-    public static Error New(string code, string message, ErrorType type = ErrorType.Failure)
-           => new(code, message, type);
+    public static Error New(ErrorCode code, string message, ErrorType type = ErrorType.Failure)
+        => new(code, message, type);
 
-    public static Error Failure(string code = "General.Failure", string message = "A failure has occurred.")
+    public static Error Failure(ErrorCode code = ErrorCode.GeneralFailure, string message = "Có lỗi xảy ra")
         => new(code, message, ErrorType.Failure);
 
-    public static Error NotFound(string code = "General.NotFound", string message = "The requested resource was not found.")
+    public static Error BadRequest(ErrorCode code = ErrorCode.GeneralBadRequest, string message = "Có lỗi xảy ra")
+        => new(code, message, ErrorType.Failure);
+
+    public static Error NotFound(ErrorCode code = ErrorCode.GeneralNotFound, string message = "Không tìm thấy")
         => new(code, message, ErrorType.NotFound);
 
-    public static Error Validation(string code = "General.Validation", string message = "Validation error.")
+    public static Error Validation(ErrorCode code = ErrorCode.GeneralValidation, string message = "Vui lòng nhập đúng định dạng")
         => new(code, message, ErrorType.Validation);
 
-    public static Error Conflict(string code = "General.Conflict", string message = "A conflict occurred.")
+    public static Error Conflict(ErrorCode code = ErrorCode.GeneralConflict, string message = "Xung đột dữ liệu")
         => new(code, message, ErrorType.Conflict);
 
-    public static Error Unauthorized(string code = "General.Unauthorized", string message = "Unauthorized access.")
+    public static Error Unauthorized(ErrorCode code = ErrorCode.GeneralUnauthorized, string message = "Vui lòng đăng nhập để tiếp tục")
         => new(code, message, ErrorType.Unauthorized);
 
-    public static Error Forbidden(string code = "General.Forbidden", string message = "Forbidden access.")
+    public static Error Forbidden(ErrorCode code = ErrorCode.GeneralForbidden, string message = "Không có quyền truy cập")
         => new(code, message, ErrorType.Forbidden);
 
-    public static Error InternalServerError(string code = "General.InternalServerError", string message = "Internal Server Error.")
+    public static Error InternalServerError(ErrorCode code = ErrorCode.GeneralInternalServerError, string message = "Lỗi máy chủ nội bộ")
         => new(code, message, ErrorType.InternalServerError);
 }
 
@@ -62,7 +67,7 @@ public class Response
 
         IsSuccess = isSuccess;
         StatusCode = statusCode;
-        Message = message ?? (isSuccess ? "Request successful." : error!.Message);
+        Message = message ?? (isSuccess ? "Lấy dữ liệu thành công" : error!.Message);
         Error = error ?? Error.None;
     }
 
@@ -103,7 +108,7 @@ public class Response<T> : Response
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public T Data => IsSuccess && _data is not null
         ? _data
-        : throw new InvalidOperationException("Cannot access data from a failed response or when data is null on success.");
+        : throw new InvalidOperationException("Lỗi tải dữ liệu");
 
     public static Response<T> Success(T data, string? message = null, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.OK)
         => new(data, true, statusCode, message);

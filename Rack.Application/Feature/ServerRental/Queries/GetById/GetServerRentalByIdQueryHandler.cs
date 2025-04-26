@@ -14,7 +14,7 @@ namespace Rack.Application.Feature.ServerRental.Queries.GetById
 
             if (rental == null)
             {
-                return Response<ServerRentalResponse>.Failure(Error.NotFound("Server rental not found"));
+                return Response<ServerRentalResponse>.Failure(Error.NotFound(message: "Không tìm thấy đơn này"));
             }
 
             var result = rental.Adapt<ServerRentalResponse>();

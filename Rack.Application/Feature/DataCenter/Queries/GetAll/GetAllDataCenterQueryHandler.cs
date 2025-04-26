@@ -49,8 +49,7 @@ internal class GetAllDataCenterQueryHandler(IUnitOfWork unitOfWork)
         catch (Exception ex)
         {
             return Response<List<DataCenterResponse>>.Failure(
-                Error.Failure(ex.Message),
-                Domain.Enum.HttpStatusCodeEnum.InternalServerError
+                Error.Failure()
             );
         }
     }

@@ -11,7 +11,7 @@ internal class UpdateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
         var existDC = await dcRepo.GetByIdAsync(request.DCId, cancellationToken);
         if (existDC == null)
         {
-            return Response.Failure(Error.NotFound("Không tìm thấy DataCenter này"));
+            return Response.Failure(Error.NotFound());
         }
         existDC.Name = request.Name;
         existDC.Location = request.Location;

@@ -14,14 +14,14 @@ public class UpdateConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
         var device = await deviceRepository.GetByIdAsync(request.DeviceId, cancellationToken);
         if (device == null || device.IsDeleted)
         {
-            return Response.Failure(Error.NotFound("Không có thiết bị để chứa cấu hình này"));
+            return Response.Failure(Error.NotFound());
         }
 
         var existConfig = await configItemRepo.GetByIdAsync(request.Id, cancellationToken);
 
         if (existConfig == null || existConfig.IsDeleted)
         {
-            return Response.Failure(Error.NotFound("Không tìm thấy cấu hình"));
+            return Response.Failure(Error.NotFound());
         }
 
         // Kiểm tra trùng lặp nếu thay đổi ConfigType
@@ -33,7 +33,7 @@ public class UpdateConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
 
             if (existingConfig != null)
             {
-                return Response.Failure(Error.Conflict($"Loại cấu hình đã tồn tại!"));
+                return Response.Failure(Error.Conflict());
             }
         }
 

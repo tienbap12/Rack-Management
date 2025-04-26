@@ -250,9 +250,6 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<Guid?>("ParentDeviceID")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("PositionInRack")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<Guid?>("RackID")
                         .HasColumnType("uniqueidentifier");
 
@@ -265,8 +262,11 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("SlotInParent")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UPosition")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -310,8 +310,8 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("RackNumber")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Size")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Size")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -384,8 +384,8 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

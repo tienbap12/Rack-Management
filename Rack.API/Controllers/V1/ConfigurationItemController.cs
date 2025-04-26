@@ -24,7 +24,7 @@ public class ConfigurationItemController : ApiController
 
     [HttpGet]
     [Route(ApiRoutesV1.ConfigurationItem.GetByDeviceId)]
-    public async Task<IActionResult> GetById([FromRoute] Guid deviceId)
+    public async Task<IActionResult> GetByDeviceId([FromRoute] Guid deviceId)
     {
         var query = new GetConfigurationItemByDeviceIdQuery(deviceId);
         var result = await Mediator.Send(query);

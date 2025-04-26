@@ -28,8 +28,7 @@ public class GetAllConfigurationItemQueryHandler(IUnitOfWork unitOfWork) : IQuer
         catch (Exception ex)
         {
             return Response<List<ConfigurationItemResponse>>.Failure(
-                Error.Failure(ex.Message),
-                Domain.Enum.HttpStatusCodeEnum.InternalServerError);
+                Error.Failure());
         }
     }
 }

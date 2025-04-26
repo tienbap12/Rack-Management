@@ -1,13 +1,10 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Rack.Domain.Commons.Abstractions;
-using Rack.Domain.Data;
 using Rack.Domain.Entities;
-using Rack.Domain.Enumerations;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,7 +18,7 @@ namespace Rack.MainInfrastructure.Common.Authentication
         public string Generate(Account req, string roleName)
         {
             var secretKey = _jwtSettings.SecurityKey;
-            var tokenExpires = DateTime.UtcNow.AddMinutes(_jwtSettings.TokenExpirationInMinutes);
+            var tokenExpires = DateTime.UtcNow.AddDays(_jwtSettings.TokenExpirationInMinutes);
             var jwtTokenHandler = new JwtSecurityTokenHandler();
 
             var key = Encoding.ASCII.GetBytes(secretKey);

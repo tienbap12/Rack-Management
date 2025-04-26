@@ -9,7 +9,7 @@ internal class DeleteDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
     {
         var dcRepo = unitOfWork.GetRepository<Rack.Domain.Entities.DataCenter>();
         var existDC = await dcRepo.GetByIdAsync(request.DCId, cancellationToken);
-        if (existDC == null) return Response.Failure(Error.NotFound("Không tìm thấy DataCenter này"));
+        if (existDC == null) return Response.Failure(Error.NotFound());
         await dcRepo.DeleteAsync(request.DCId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Response.Success();

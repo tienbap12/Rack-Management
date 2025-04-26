@@ -1,4 +1,4 @@
-using Rack.Domain.Commons.Primitives;
+﻿using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 
 namespace Rack.Application.Feature.ServerRental.Commands.Delete
@@ -9,7 +9,7 @@ namespace Rack.Application.Feature.ServerRental.Commands.Delete
         {
             var serverRentalRepo = unitOfWork.GetRepository<Domain.Entities.ServerRental>();
             var rental = await serverRentalRepo.GetByIdAsync(request.RentalId, cancellationToken);
-            if (rental == null) return Response.Failure(Error.NotFound("Server rental not found"));
+            if (rental == null) return Response.Failure(Error.NotFound(message: "Không tìm thấy đơn này"));
 
             await serverRentalRepo.DeleteAsync(request.RentalId, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);

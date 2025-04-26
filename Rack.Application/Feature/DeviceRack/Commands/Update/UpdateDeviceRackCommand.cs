@@ -8,5 +8,5 @@ public class UpdateDeviceRackCommand(Guid rackId, UpdateDeviceRackRequest update
     public Guid RackId { get; set; } = rackId;
     public Guid DataCenterID { get; set; } = updateDeviceRackRequest.DataCenterID;
     public string RackNumber { get; set; } = updateDeviceRackRequest.RackNumber;
-    public string? Size { get; set; } = updateDeviceRackRequest.Size;
+    public int? Size { get; set; } = updateDeviceRackRequest.Size;
 }

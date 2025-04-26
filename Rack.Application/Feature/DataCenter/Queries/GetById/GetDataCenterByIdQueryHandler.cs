@@ -13,7 +13,7 @@ namespace Rack.Application.Feature.DataCenter.Queries.GetById
             var dataCenter = await dataCenterRepository.GetByIdAsync(request.Id, cancellationToken);
             if (dataCenter == null)
             {
-                return Response<DataCenterResponse>.Failure(Error.NotFound("Không tìm thấy Data Center này!"));
+                return Response<DataCenterResponse>.Failure(Error.NotFound());
             }
             var result = dataCenter.Adapt<DataCenterResponse>();
             return Response<DataCenterResponse>.Success(result);

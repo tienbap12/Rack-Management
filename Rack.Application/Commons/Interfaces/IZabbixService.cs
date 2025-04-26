@@ -14,4 +14,5 @@ public interface IZabbixService
     Task<IEnumerable<ZabbixProblemInfo>> GetProblemsByHostAsync(string hostId, CancellationToken cancellationToken = default);
 
     Task<Dictionary<string, string>> GetHostResourceItemsAsync(string hostId, IEnumerable<string> itemKeys, CancellationToken cancellationToken = default);
+    Task<string> GetDeviceTypeAsync(string hostId, CancellationToken cancellationToken);
 }

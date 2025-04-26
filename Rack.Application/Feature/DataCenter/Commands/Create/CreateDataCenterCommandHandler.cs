@@ -20,7 +20,6 @@ internal class CreateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
         if (existingDC != null)
         {
             return Error.Conflict(
-                $"Data Center with name '{request.Name}' already exists"
             );
         }
 

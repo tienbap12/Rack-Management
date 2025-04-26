@@ -11,7 +11,7 @@ namespace Rack.Application.Feature.ServerRental.Commands.Update
             var existingRental = await serverRentalRepo.GetByIdAsync(request.RentalId, cancellationToken);
             if (existingRental == null)
             {
-                return Response.Failure(Error.NotFound("Server rental not found"));
+                return Response.Failure(Error.NotFound(message: "Server rental not found"));
             }
 
             existingRental.StartDate = request.StartDate;

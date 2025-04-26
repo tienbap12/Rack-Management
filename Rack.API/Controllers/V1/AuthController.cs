@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace Rack.API.Controllers.V1;
 
-public class UserController : ApiController
+public class AuthController : ApiController
 {
     [HttpPost]
-    [Route(ApiRoutesV1.Account.Login)]
+    [Route(ApiRoutesV1.Auth.Login)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var command = new LoginCommand(request);
@@ -20,7 +20,7 @@ public class UserController : ApiController
     }
 
     [HttpPost]
-    [Route(ApiRoutesV1.Account.Register)]
+    [Route(ApiRoutesV1.Auth.Register)]
     public async Task<IActionResult> Register([FromBody] AuthRequest request)
     {
         var command = new RegisterCommand(request);
@@ -29,7 +29,7 @@ public class UserController : ApiController
     }
 
     [HttpPost]
-    [Route(ApiRoutesV1.Account.RefreshToken)]
+    [Route(ApiRoutesV1.Auth.RefreshToken)]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
     {
         var command = new RefreshTokenCommand(request);

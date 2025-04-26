@@ -24,7 +24,7 @@ internal class RefreshTokenCommandHandler(IUnitOfWork unitOfWork, IJwtProvider j
             existingToken.IsRevoked ||
             existingToken.ExpiryDate < DateTime.UtcNow)
         {
-            return Response<TokenResponse>.Failure(Error.Unauthorized("Refresh token không hợp lệ hoặc đã hết hạn"));
+            return Response<TokenResponse>.Failure(Error.Unauthorized(message: "Refresh token không hợp lệ hoặc đã hết hạn"));
         }
 
         var account = existingToken.Account;

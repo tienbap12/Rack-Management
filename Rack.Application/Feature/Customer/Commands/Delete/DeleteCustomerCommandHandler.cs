@@ -9,7 +9,7 @@ namespace Rack.Application.Feature.Customer.Commands.Delete
         {
             var customerRepo = unitOfWork.GetRepository<Domain.Entities.Customer>();
             var customer = await customerRepo.GetByIdAsync(request.CustomerId, cancellationToken);
-            if (customer == null) return Response.Failure(Error.NotFound("Customer not found"));
+            if (customer == null) return Response.Failure(Error.NotFound());
 
             await customerRepo.DeleteAsync(request.CustomerId, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);

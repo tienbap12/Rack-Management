@@ -2,7 +2,6 @@
 using Rack.Domain.Commons.Primitives;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace Rack.Domain.Entities
 {
@@ -10,7 +9,7 @@ namespace Rack.Domain.Entities
     {
         public Guid DataCenterID { get; set; }
         public string RackNumber { get; set; } = null!;
-        public string? Size { get; set; }    // Ví dụ: '42U'
+        public int Size { get; set; }    // Ví dụ: '42U'
         public bool IsDeleted { get; set; }
         public DateTime? DeletedOn { get; set; }
         public string? DeletedBy { get; set; }
@@ -21,6 +20,7 @@ namespace Rack.Domain.Entities
 
         // Quan hệ với DataCenter
         public DataCenter DataCenter { get; set; } = null!;
+
         // Quan hệ 1 - N với Device
         public ICollection<Device> Devices { get; set; } = new List<Device>();
     }

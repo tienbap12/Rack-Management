@@ -7,8 +7,11 @@ using Rack.Domain.Entities;
 
 namespace Rack.Application.Feature.User.Commands.Login;
 
-public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvider,
-    IPasswordHashChecker passwordHashChecker) : ICommandHandler<LoginCommand, Response<AuthResponse>>
+public class LoginCommandHandler(
+    IUnitOfWork unitOfWork,
+    IJwtProvider jwtProvider,
+    IPasswordHashChecker passwordHashChecker
+) : ICommandHandler<LoginCommand, Response<AuthResponse>>
 {
     public async Task<Response<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
@@ -22,13 +25,13 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
 
         if (user is null)
         {
-            return Response<AuthResponse>.Failure(Error.NotFound("Tài khoản không tồn tại"));
+            return Response<AuthResponse>.Failure(Error.NotFound(message: "Tài khoản không tồn tại"));
         }
 
         var isValidPass = passwordHashChecker.HashesMatch(request.Password, user);
         if (!isValidPass)
         {
-            return Response<AuthResponse>.Failure(Error.Validation("Mật khẩu không đúng"));
+            return Response<AuthResponse>.Failure(Error.Validation(message: "Mật khẩu không đúng"));
         }
 
         // Generate tokens
@@ -40,7 +43,7 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
         {
             UserId = user.Id,
             Token = refreshToken,
-            JwtId = Guid.NewGuid().ToString(), // Optional: set to match JTI if needed
+            JwtId = Guid.NewGuid().ToString(),
             IsUsed = false,
             IsRevoked = false,
             ExpiryDate = DateTime.UtcNow.AddDays(7)
@@ -54,6 +57,7 @@ public class LoginCommandHandler(IUnitOfWork unitOfWork, IJwtProvider jwtProvide
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             Role = user.Role.Name,
+            Name = user.FullName ?? user.Username // Dùng FullName, fallback sang Username
         };
 
         return Response<AuthResponse>.Success(result);

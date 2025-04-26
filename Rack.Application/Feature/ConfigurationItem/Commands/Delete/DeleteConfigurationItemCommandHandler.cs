@@ -15,7 +15,7 @@ public class DeleteConfigurationItemCommandHandler(IUnitOfWork unitOfWork) : ICo
 
         if (existConfig == null || existConfig.IsDeleted)
         {
-            return Response.Failure(Error.NotFound("Configuration item not found"));
+            return Response.Failure(Error.NotFound());
         }
 
         existConfig.IsDeleted = true;

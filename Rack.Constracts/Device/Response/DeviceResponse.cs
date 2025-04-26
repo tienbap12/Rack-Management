@@ -1,4 +1,5 @@
 using Rack.Contracts.Audit;
+using Rack.Domain.Enum;
 
 namespace Rack.Contracts.Device.Responses;
 
@@ -11,10 +12,11 @@ public record DeviceResponse : BaseAuditDto
     public string Name { get; init; }
     public string IpAddress { get; init; }
     public string? PositionInRack { get; init; }
+    public int? UPosition { get; init; }
     public string? SlotInParent { get; init; }
     public string DeviceType { get; init; }
     public string? Manufacturer { get; init; }
     public string? SerialNumber { get; init; }
     public string? Model { get; init; }
-    public string Status { get; init; }
+    public DeviceStatus Status { get; init; }
 }

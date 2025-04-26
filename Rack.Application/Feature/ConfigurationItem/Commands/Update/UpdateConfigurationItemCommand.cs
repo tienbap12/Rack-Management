@@ -7,6 +7,6 @@ public class UpdateConfigurationItemCommand(Guid ConfigItemId, UpdateConfigurati
 {
     public Guid Id => ConfigItemId;
     public Guid DeviceId => updateConfigurationItemRequest.DeviceId;
-    public string ConfigType => updateConfigurationItemRequest.ConfigType;
-    public string ConfigValue => updateConfigurationItemRequest.Value;
+    public string? ConfigType => updateConfigurationItemRequest.ConfigType;
+    public string? ConfigValue => updateConfigurationItemRequest.ConfigValue;
 }

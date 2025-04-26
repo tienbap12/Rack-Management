@@ -33,7 +33,7 @@ public class DataCenterController : ApiController
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     [Route(ApiRoutesV1.DataCenter.Create)]
     public async Task<IActionResult> Create([FromBody] CreateDataCenterRequest request)
     {

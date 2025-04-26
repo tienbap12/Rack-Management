@@ -135,7 +135,7 @@ namespace Rack.MainInfrastructure.Services
             try
             {
                 // Tạo file key duy nhất với folder 'uploads'
-                var fileKey = $"uploads/{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid()}-{Path.GetFileName(fileName)}";
+                var fileKey = $"uploads/s3.vnso-{Guid.NewGuid()}-{Path.GetFileName(fileName)}";
                 int expiry = _config.GetValue<int?>("MinIO:PresignedUrlExpirySeconds") ?? 600; // Mặc định 10 phút
 
                 var args = new PresignedPutObjectArgs()
@@ -254,7 +254,7 @@ namespace Rack.MainInfrastructure.Services
                 throw new ArgumentNullException(nameof(fileName));
 
             // Tạo file key duy nhất với folder 'uploads'
-            var fileKey = $"uploads/{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid()}-{Path.GetFileName(fileName)}";
+            var fileKey = $"uploads/s3.vnso-{Guid.NewGuid()}-{Path.GetFileName(fileName)}";
 
             _logger.LogInformation("Đang upload file trực tiếp. Bucket: {BucketName}, Key: {FileKey}, Loại: {ContentType}, Kích thước: {Size}", bucketName, fileKey, contentType, fileStream.Length);
 
@@ -287,6 +287,100 @@ namespace Rack.MainInfrastructure.Services
                 _logger.LogError(ex, "Lỗi khi upload file trực tiếp. Bucket: {BucketName}, Key dự định: {FileKey}", bucketName, fileKey);
                 throw;
             }
+        }
+
+        public async Task<IEnumerable<PrefixResponse>> ListPrefixesAsync(string bucketName, string? currentPrefix = null, CancellationToken cancellationToken = default)
+        {
+            // --- Input Validation ---
+            if (string.IsNullOrWhiteSpace(bucketName))
+                throw new ArgumentNullException(nameof(bucketName));
+
+            _logger.LogInformation("Liệt kê prefixes con của '{Prefix}' trong bucket {BucketName}", currentPrefix ?? "gốc", bucketName);
+
+            try
+            {
+                // --- Cấu hình truy vấn MinIO ---
+                var listArgs = new ListObjectsArgs()
+                    .WithBucket(bucketName)
+                    .WithPrefix(currentPrefix)
+                    .WithRecursive(false); // Chỉ lấy các mục ở cấp hiện tại
+
+                // --- Thu thập bất đồng bộ các mục từ Observable ---
+                var items = await GetItemsFromObservableAsync(listArgs, cancellationToken).ConfigureAwait(false);
+
+                // --- Xử lý kết quả để trích xuất Prefixes ---
+                var prefixes = items
+                    .Where(item => item.IsDir && // Chỉ lấy các mục là "thư mục" (prefix)
+                                   !string.IsNullOrEmpty(item.Key) && // Key không rỗng
+                                   item.Key != currentPrefix) // Không lấy lại prefix cha
+                    .Select(item => new PrefixResponse(item.Key)) // Tạo DTO Response
+                    .OrderBy(p => p.Prefix) // Sắp xếp theo alphabet
+                    .ToList(); // Chuyển thành List
+
+                _logger.LogInformation("Tìm thấy {Count} prefixes con của '{Prefix}' trong bucket {BucketName}", prefixes.Count, currentPrefix ?? "gốc", bucketName);
+                return prefixes;
+            }
+            // --- Xử lý các lỗi cụ thể từ MinIO ---
+            catch (BucketNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Bucket không tồn tại khi liệt kê prefixes: {BucketName}", bucketName);
+                // Có thể trả về danh sách rỗng hoặc ném lại lỗi tùy yêu cầu
+                // return Enumerable.Empty<PrefixResponse>();
+                throw; // Ném lại để Controller xử lý thành NotFound hoặc lỗi khác
+            }
+            catch (MinioException ex) // Bắt các lỗi MinIO khác
+            {
+                _logger.LogError(ex, "Lỗi MinIO khi liệt kê prefixes con của '{Prefix}' trong bucket {BucketName}", currentPrefix ?? "gốc", bucketName);
+                throw; // Ném lại lỗi
+            }
+            // --- Xử lý lỗi chung ---
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi không xác định khi liệt kê prefixes con của '{Prefix}' trong bucket {BucketName}", currentPrefix ?? "gốc", bucketName);
+                throw; // Ném lại lỗi
+            }
+        }
+
+        /// <summary>
+        /// Phương thức helper để chuyển đổi IObservable<Item> thành Task<List<Item>>.
+        /// </summary>
+        private async Task<List<Minio.DataModel.Item>> GetItemsFromObservableAsync(ListObjectsArgs args, CancellationToken cancellationToken)
+        {
+            var items = new List<Minio.DataModel.Item>();
+            var tcs = new TaskCompletionSource<bool>(); // Dùng TaskCompletionSource để đợi Observable
+
+            // Lấy Observable từ client
+            var listObjectsObservable = _minioClient.ListObjectsAsync(args, cancellationToken);
+
+            // Đăng ký vào Observable
+            var subscription = listObjectsObservable.Subscribe(
+                item => items.Add(item), // OnNext: Thêm item vào danh sách
+                ex => tcs.TrySetException(ex), // OnError: Báo lỗi cho Task
+                () => tcs.TrySetResult(true) // OnCompleted: Báo thành công cho Task
+            );
+
+            // Sử dụng using để đảm bảo Dispose subscription
+            using (subscription)
+            {
+                // Tạo một task để theo dõi cancellation
+                var cancellationTask = Task.Delay(Timeout.Infinite, cancellationToken);
+                // Chờ task của Observable hoặc task cancellation hoàn thành
+                var completedTask = await Task.WhenAny(tcs.Task, cancellationTask).ConfigureAwait(false);
+
+                // Nếu task cancellation hoàn thành trước (bị hủy), ném lỗi hủy bỏ
+                if (completedTask == cancellationTask)
+                {
+                    // Task bị hủy bởi CancellationToken
+                    _logger.LogWarning("ListObjectsAsync operation was cancelled for bucket {Bucket} and prefix {Prefix}.", args.WithBucket, args.WithPrefix);
+                    throw new OperationCanceledException(cancellationToken);
+                }
+
+                // Nếu task của Observable hoàn thành (dù thành công hay lỗi),
+                // await lại nó để ném exception nếu có lỗi xảy ra trong Observable
+                await tcs.Task.ConfigureAwait(false);
+            }
+
+            return items; // Trả về danh sách các items đã thu thập
         }
     }
 }

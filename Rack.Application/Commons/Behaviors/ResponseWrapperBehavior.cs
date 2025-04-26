@@ -18,7 +18,7 @@ public class ResponseWrapperBehavior<TRequest, TResponse> : IPipelineBehavior<TR
         }
         catch (Exception ex)
         {
-            var error = Error.Failure("Unhandled.Exception", ex.Message);
+            var error = Error.Failure(Domain.Enum.ErrorCode.GeneralInternalServerError, ex.Message);
 
             if (typeof(TResponse) == typeof(Response))
                 return (TResponse)(object)Response.Failure(error);

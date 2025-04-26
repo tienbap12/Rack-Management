@@ -11,7 +11,7 @@ public class UpdateRoleCommandHandler(IUnitOfWork unitOfWork) : ICommandHandler<
         var role = await roleRepository.GetByIdAsync(request.Id, cancellationToken);
         if (role == null)
         {
-            return Response.Failure(Error.NotFound("Không tìm thấy Role này!"));
+            return Response.Failure("Không tìm thấy Role này!", Domain.Enum.HttpStatusCodeEnum.NotFound);
         }
 
         role.Name = request.Name;
@@ -19,6 +19,6 @@ public class UpdateRoleCommandHandler(IUnitOfWork unitOfWork) : ICommandHandler<
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Response.Success("Cập nhật Role thành công!");
+        return Response.Success("Cập nhật Role thành công!", Domain.Enum.HttpStatusCodeEnum.OK);
     }
 }

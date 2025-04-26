@@ -2,7 +2,6 @@
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Enum;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Rack.Domain.Entities
@@ -10,7 +9,7 @@ namespace Rack.Domain.Entities
     public class Role : Entity, IAuditInfo, ISoftDelete
     {
         public string Name { get; set; }
-        public string Status { get; set; } = StatusDevice.ACTIVE;
+        public CommonStatus Status { get; set; } = CommonStatus.Active;
         public bool IsDeleted { get; set; }
         public DateTime? DeletedOn { get; set; }
         public string? DeletedBy { get; set; }

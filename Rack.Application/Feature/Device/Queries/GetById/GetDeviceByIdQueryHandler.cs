@@ -13,7 +13,7 @@ internal class GetDeviceByIdQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler
         var device = await deviceRepository.GetByIdAsync(request.Id, cancellationToken);
         if (device is null)
         {
-            return Response<DeviceRackResponse>.Failure(Error.NotFound("Không tìm thấy thiết bị này!"));
+            return Response<DeviceRackResponse>.Failure(Error.NotFound());
         }
         var deviceResponse = device.Adapt<DeviceRackResponse>();
 

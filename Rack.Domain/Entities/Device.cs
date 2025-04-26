@@ -3,6 +3,7 @@ using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Enum;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Rack.Domain.Entities
 {
@@ -13,13 +14,15 @@ namespace Rack.Domain.Entities
         public int Size { get; set; }
         public string Name { get; set; }
         public string IpAddress { get; set; }
-        public string? PositionInRack { get; set; }  // Ví dụ: 'U1', 'U10-U20'
+
+        public int? UPosition { get; set; }
+
         public string? SlotInParent { get; set; }    // Ví dụ: 'Slot1' cho blade server
         public string DeviceType { get; set; } = null!;   // Ví dụ: 'Server', 'Switch', 'SAN', 'BladeChassis'
         public string? Manufacturer { get; set; }
         public string? SerialNumber { get; set; }
         public string? Model { get; set; }
-        public string Status { get; set; } = StatusDevice.ACTIVE;
+        public DeviceStatus Status { get; set; } = DeviceStatus.Active;
 
         // Quan hệ tự tham chiếu: 1 Device có thể có nhiềuAction state Device con
         public Device? ParentDevice { get; set; }
@@ -42,5 +45,19 @@ namespace Rack.Domain.Entities
         public string CreatedBy { get; set; }
         public DateTime? LastModifiedOn { get; set; }
         public string LastModifiedBy { get; set; }
+
+        [NotMapped]
+        public string? CalculatedPositionString // Thuộc tính để hiển thị dạng "U10-U11"
+        {
+            get
+            {
+                if (UPosition.HasValue && Size > 0)
+                {
+                    if (Size == 1) return $"U{UPosition.Value}";
+                    return $"U{UPosition.Value}-U{UPosition.Value + Size - 1}";
+                }
+                return null;
+            }
+        }
     }
 }

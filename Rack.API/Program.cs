@@ -1,3 +1,4 @@
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -16,11 +17,14 @@ builder.Services.AddControllers();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication(builder.Configuration);
 builder.Services.ConfigService(builder.Configuration);
-builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
+builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+    //options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false));
 });
 
+builder.Services.AddCorsConfig();
 builder.Services.AddSignalR();
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
@@ -40,18 +44,12 @@ app.UseSwaggerUI(options =>
     options.SwaggerEndpoint(swaggerOptions.UIEndpoint, swaggerOptions.Description ?? "My API V1");
 });
 
-// Apply CORS policy
+app.UseRouting();
 app.UseCors("CorsPolicy");
 
-app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    _ = endpoints.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}");
-});
+app.MapControllers();
 app.MapHub<ChatHub>("/chat-hub");
 app.Run();

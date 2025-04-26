@@ -11,7 +11,7 @@ namespace Rack.Application.Feature.Customer.Commands.Update
             var existingCustomer = await customerRepo.GetByIdAsync(request.CustomerId, cancellationToken);
             if (existingCustomer == null)
             {
-                return Response.Failure(Error.NotFound("Customer not found"));
+                return Response.Failure(Error.NotFound());
             }
 
             existingCustomer.Name = request.Name;

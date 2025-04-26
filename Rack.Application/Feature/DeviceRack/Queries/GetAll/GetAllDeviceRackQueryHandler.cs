@@ -1,4 +1,7 @@
 using Mapster;
+using Microsoft.EntityFrameworkCore;
+using Rack.Contracts.DataCenter.Response;
+using Rack.Contracts.Device.Responses;
 using Rack.Contracts.DeviceRack.Response;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
@@ -15,19 +18,13 @@ internal class GetAllDeviceRackQueryHandler(IUnitOfWork unitOfWork)
         try
         {
             var deviceRackRepository = unitOfWork.GetRepository<Domain.Entities.DeviceRack>();
-            var deviceRacks = await deviceRackRepository.GetAllAsync(cancellationToken);
-
-            if (deviceRacks == null || !deviceRacks.Any())
-            {
-                return Response<List<DeviceRackResponse>>.Success(new List<DeviceRackResponse>());
-            }
-
-            var deviceRackResult = deviceRacks.Adapt<List<DeviceRackResponse>>();
-            return Response<List<DeviceRackResponse>>.Success(deviceRackResult);
+            var rackData = await deviceRackRepository.GetAllAsync(cancellationToken);
+            var rackResult = rackData.Adapt<List<DeviceRackResponse>>();
+            return Response<List<DeviceRackResponse>>.Success(rackResult);
         }
         catch (Exception ex)
         {
-            return Response<List<DeviceRackResponse>>.Failure(Error.Failure(ex.Message), Domain.Enum.HttpStatusCodeEnum.InternalServerError);
+            return Response<List<DeviceRackResponse>>.Failure(Error.Failure());
         }
     }
 }
