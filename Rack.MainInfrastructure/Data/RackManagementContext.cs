@@ -135,7 +135,7 @@ namespace Rack.MainInfrastructure.Data
             var utcNow = DateTime.UtcNow;
             var currentUser = _userContext.GetUsername();
 
-           foreach (var entry in ChangeTracker.Entries<ISoftDelete>())
+            foreach (var entry in ChangeTracker.Entries<ISoftDelete>())
             {
                 if (entry.State == EntityState.Deleted)
                 {
@@ -151,7 +151,10 @@ namespace Rack.MainInfrastructure.Data
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
-            _transaction ??= await Database.BeginTransactionAsync(cancellationToken);
+            if (_transaction == null)
+            {
+                _transaction = await Database.BeginTransactionAsync(cancellationToken);
+            }
         }
 
         public async Task CommitAsync(CancellationToken cancellationToken = default)

@@ -1,4 +1,6 @@
-﻿using Rack.Contracts.ConfigurationItem.Requests;
+﻿using Rack.Contracts.Card.Request;
+using Rack.Contracts.ConfigurationItem.Requests;
+using Rack.Contracts.Port.Request;
 using Rack.Domain.Enum;
 
 namespace Rack.Contracts.Device.Requests;
@@ -18,8 +20,27 @@ public record CreateDeviceRequest(
     string DeviceType,
     DeviceStatus Status,
     string? IpAddress,
+    string? LinkIdPage,
     string? Manufacturer,
     string? SerialNumber,
     string? Model,
-    List<CreateConfigurationItemRequest>? ConfigurationItems
+    List<CreateConfigurationItemRequest>? ConfigurationItems,
+    List<CreateCardRequest>? Cards,
+    List<CreatePortRequest>? Ports,
+    List<CreateChildDeviceRequest>? ChildDevices
+);
+
+public record CreateChildDeviceRequest(
+    string Name,
+    string DeviceType,
+    DeviceStatus Status,
+    string? IpAddress,
+    string? LinkIdPage,
+    string? Manufacturer,
+    string? SerialNumber,
+    string? Model,
+    string SlotInParent,
+    List<CreateConfigurationItemRequest>? ConfigurationItems,
+    List<CreateCardRequest>? Cards,
+    List<CreatePortRequest>? Ports
 );

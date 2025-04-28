@@ -23,16 +23,19 @@ namespace Rack.Application.Commons.DTOs.Zabbix
         // Các thuộc tính được tính toán/lấy từ API khác, không cần JsonPropertyName
         // IpAddress được kế thừa và sẽ được tính/gán giá trị
         public List<ZabbixProblemInfo>? RecentProblems { get; set; }
-        public Dictionary<string, string>? Resources { get; set; }
+
+        public List<ZabbixItemDetailDto>? Resources { get; set; }
 
         // Bỏ GroupNames, TemplateNames vì đã có Groups, Templates (list objects)
         // public List<string>? GroupNames { get; set; }
         // public List<string>? TemplateNames { get; set; }
     }
+
     public class ZabbixGroupDto
     {
         [JsonPropertyName("groupid")]
         public string GroupId { get; set; } = string.Empty;
+
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
     }
@@ -42,6 +45,7 @@ namespace Rack.Application.Commons.DTOs.Zabbix
     {
         [JsonPropertyName("templateid")]
         public string TemplateId { get; set; } = string.Empty;
+
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
     }

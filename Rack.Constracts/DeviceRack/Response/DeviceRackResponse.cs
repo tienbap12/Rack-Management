@@ -1,6 +1,4 @@
 ﻿using Rack.Contracts.Audit;
-using Rack.Contracts.Device.Responses;
-using System.Collections;
 
 namespace Rack.Contracts.DeviceRack.Response;
 

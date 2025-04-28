@@ -8,7 +8,6 @@ using Rack.Domain.Enum;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,7 +32,7 @@ namespace Rack.API.Controllers.V1
         /// Lấy danh sách host được giám sát
         /// </summary>
         [HttpGet("hosts")]
-        public async Task<ActionResult<ApiResponseBaseDto>> GetMonitoredHosts(
+        public async Task<ActionResult<ApiResponseBaseDto>> GetAllHostsAsync(
             CancellationToken cancellationToken)
         {
             try
@@ -54,17 +53,52 @@ namespace Rack.API.Controllers.V1
             }
         }
 
+        [HttpGet("hosts/paged")]
+        public async Task<ActionResult<ApiResponseBaseDto>> GetHostsPagedAsync(
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
+            [FromQuery] string? search,
+            [FromQuery] string? deviceType,
+            CancellationToken cancellationToken)
+        {
+            var hosts = await _zabbixService.GetHostsPagedAsync(page, pageSize, search, deviceType, cancellationToken);
+            return new SuccessApiResponseDto<IEnumerable<ZabbixHostSummary>>(
+                  "Lấy danh sách host thành công",
+                  HttpStatusCodeEnum.OK,
+                  hosts);
+        }
+
+        [HttpGet("hosts/{hostId}/basic")]
+        public async Task<ActionResult<ApiResponseBaseDto>> GetHostBasicDetailsAsync(
+        string hostId,
+        CancellationToken cancellationToken)
+        {
+            var hostDetails = await _zabbixService.GetHostBasicDetailsAsync(hostId, cancellationToken);
+            return hostDetails == null
+                    ? new FailureApiResponseDto(
+                        "Không tìm thấy host",
+                        HttpStatusCodeEnum.NotFound,
+                        new ErrorDto(HttpStatusCodeEnum.InternalServerError, $"Host ID {hostId} không tồn tại", ErrorType.Failure))
+                    : new SuccessApiResponseDto<ZabbixHostDetail>(
+                        "Lấy chi tiết host thành công",
+                        HttpStatusCodeEnum.OK,
+                        hostDetails);
+        }
+
         /// <summary>
         /// Lấy chi tiết host theo ID
         /// </summary>
         [HttpGet("hosts/{hostId}")]
         public async Task<ActionResult<ApiResponseBaseDto>> GetHostDetail(
-            [Required] string hostId,
-            CancellationToken cancellationToken)
+             string hostId,
+            [FromQuery] bool includeProblems = true,
+            [FromQuery] bool includeResources = true,
+            [FromQuery] int problemLimit = 5,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                var hostDetail = await _zabbixService.GetHostDetailsAsync(hostId, cancellationToken);
+                var hostDetail = await _zabbixService.GetHostFullDetailsAsync(hostId, includeProblems, includeResources, problemLimit, cancellationToken);
 
                 return hostDetail == null
                     ? new FailureApiResponseDto(
@@ -91,12 +125,13 @@ namespace Rack.API.Controllers.V1
         /// </summary>
         [HttpGet("hosts/{hostId}/problems")]
         public async Task<ActionResult<ApiResponseBaseDto>> GetProblemsByHost(
-            [Required] string hostId,
-            CancellationToken cancellationToken)
+             string hostId,
+            [FromQuery] int limit = 5,
+            CancellationToken cancellationToken = default)
         {
             try
             {
-                var problems = await _zabbixService.GetProblemsByHostAsync(hostId, cancellationToken);
+                var problems = await _zabbixService.GetRecentHostProblemsAsync(hostId, limit, cancellationToken);
                 return new SuccessApiResponseDto<IEnumerable<ZabbixProblemInfo>>(
                     "Lấy danh sách vấn đề thành công",
                     HttpStatusCodeEnum.OK,
@@ -115,7 +150,7 @@ namespace Rack.API.Controllers.V1
         /// <summary>
         /// Lấy các vấn đề gần đây theo mức độ nghiêm trọng
         /// </summary>
-        [HttpGet("problems/recent")]
+        [HttpGet("problems")]
         public async Task<ActionResult<ApiResponseBaseDto>> GetRecentProblems(
             [FromQuery] int severityThreshold = 0,
             [FromQuery] int limit = 100,
@@ -137,7 +172,7 @@ namespace Rack.API.Controllers.V1
                     cancellationToken);
 
                 return new SuccessApiResponseDto<IEnumerable<ZabbixProblemInfo>>(
-                    "Lấy vấn đề gần đây thành công",
+                    "Lấy problems gần đây thành công",
                     HttpStatusCodeEnum.OK,
                     problems);
             }
@@ -154,28 +189,20 @@ namespace Rack.API.Controllers.V1
         /// <summary>
         /// Lấy thông tin tài nguyên của host
         /// </summary>
-        [HttpGet("hosts/{hostId}/resources")]
+        [HttpGet("hosts/{hostId}/resources/paged")]
         public async Task<ActionResult<ApiResponseBaseDto>> GetHostResourceItems(
-            [Required] string hostId,
-            [FromQuery(Name = "keys")][Required] IEnumerable<string> itemKeys,
-            CancellationToken cancellationToken)
+           string hostId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
         {
             try
             {
-                if (!itemKeys.Any())
-                {
-                    return new FailureApiResponseDto(
-                        "Thiếu tham số bắt buộc",
-                        HttpStatusCodeEnum.BadRequest,
-                        new ErrorDto(HttpStatusCodeEnum.InternalServerError, "Danh sách item keys không được rỗng", ErrorType.Failure));
-                }
+                var resources = await _zabbixService.GetHostResourcesPagedAsync(
+                    hostId, page, pageSize, search, cancellationToken);
 
-                var resources = await _zabbixService.GetHostResourceItemsAsync(
-                    hostId,
-                    itemKeys,
-                    cancellationToken);
-
-                return new SuccessApiResponseDto<Dictionary<string, string>>(
+                return new SuccessApiResponseDto<List<ZabbixItemDetailDto>>(
                     "Lấy thông tin tài nguyên thành công",
                     HttpStatusCodeEnum.OK,
                     resources);
@@ -189,15 +216,35 @@ namespace Rack.API.Controllers.V1
                     new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
             }
         }
-        [HttpGet("{hostId}/deviceType")]
-        public async Task<ActionResult<string>> GetDeviceType(string hostId, CancellationToken cancellationToken)
+
+        /// <summary>
+        /// Lấy thông tin tài nguyên của host
+        /// </summary>
+        [HttpGet("hosts/{hostId}/resources")]
+        public async Task<ActionResult<ApiResponseBaseDto>> GetHostResourceItems(
+            [Required] string hostId,
+            CancellationToken cancellationToken)
         {
-            var deviceType = await _zabbixService.GetDeviceTypeAsync(hostId, cancellationToken);
-            if (deviceType == null)
+            try
             {
-                return NotFound();
+                var resources = await _zabbixService.GetHostResourceItemsAsync(
+                    hostId,
+                    null,
+                    cancellationToken);
+
+                return new SuccessApiResponseDto<List<ZabbixItemDetailDto>>(
+                    "Lấy thông tin tài nguyên thành công",
+                    HttpStatusCodeEnum.OK,
+                    resources);
             }
-            return Ok(deviceType);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy tài nguyên cho host {HostId}", hostId);
+                return new FailureApiResponseDto(
+                    "Lỗi hệ thống khi lấy tài nguyên",
+                    HttpStatusCodeEnum.InternalServerError,
+                    new ErrorDto(HttpStatusCodeEnum.InternalServerError, ex.Message, ErrorType.InternalServerError));
+            }
         }
     }
 }

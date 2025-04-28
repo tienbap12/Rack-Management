@@ -7,8 +7,10 @@ namespace Rack.Domain.Entities
     public class ConfigurationItem : Entity, IAuditInfo, ISoftDelete
     {
         public Guid DeviceID { get; set; }
-        public string ConfigType { get; set; } = null!;  // Ví dụ: 'RAM', 'CPU', 'Disk'
+        public string ConfigType { get; set; } = null!;
+        public string? SerialNumber { get; set; }
         public string ConfigValue { get; set; } = null!;
+        public int Count { get; set; } = 1;
 
         // Quan hệ với Device
         public Device Device { get; set; } = null!;

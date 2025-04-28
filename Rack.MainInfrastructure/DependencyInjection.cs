@@ -25,6 +25,7 @@ namespace Rack.MainInfrastructure
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly(typeof(RackManagementContext).Assembly.FullName)));
             services.AddHttpContextAccessor();
+            services.AddMemoryCache();
             //DI UnitOfWork
             services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<RackManagementContext>());
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));

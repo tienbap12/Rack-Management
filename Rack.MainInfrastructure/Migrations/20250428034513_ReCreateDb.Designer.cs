@@ -12,8 +12,8 @@ using Rack.MainInfrastructure.Data;
 namespace Rack.MainInfrastructure.Migrations
 {
     [DbContext(typeof(RackManagementContext))]
-    [Migration("20250411072959_UpdateAuditableModel")]
-    partial class UpdateAuditableModel
+    [Migration("20250428034513_ReCreateDb")]
+    partial class ReCreateDb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -89,16 +89,16 @@ namespace Rack.MainInfrastructure.Migrations
                     b.ToTable("Accounts");
                 });
 
-            modelBuilder.Entity("Rack.Domain.Entities.ConfigurationItem", b =>
+            modelBuilder.Entity("Rack.Domain.Entities.Card", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ConfigType")
+                    b.Property<string>("CardName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ConfigValue")
+                    b.Property<string>("CardType")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CreatedBy")
@@ -124,6 +124,58 @@ namespace Rack.MainInfrastructure.Migrations
 
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("SerialNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceID");
+
+                    b.ToTable("Card");
+                });
+
+            modelBuilder.Entity("Rack.Domain.Entities.ConfigurationItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ConfigType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ConfigValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DeviceID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SerialNumber")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -229,6 +281,9 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("DeviceType")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -238,17 +293,20 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<DateTime?>("LastModifiedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LinkIdPage")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Manufacturer")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Model")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("ParentDeviceID")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("PositionInRack")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("RackID")
                         .HasColumnType("uniqueidentifier");
@@ -256,11 +314,17 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("SerialNumber")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Size")
+                        .HasColumnType("int");
+
                     b.Property<string>("SlotInParent")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UPosition")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -304,14 +368,62 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("RackNumber")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Size")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Size")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("DataCenterID");
 
                     b.ToTable("Racks");
+                });
+
+            modelBuilder.Entity("Rack.Domain.Entities.Port", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CardID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("DeviceID")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PortType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CardID");
+
+                    b.HasIndex("DeviceID");
+
+                    b.ToTable("Port");
                 });
 
             modelBuilder.Entity("Rack.Domain.Entities.RefreshToken", b =>
@@ -360,6 +472,15 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LastModifiedBy")
                         .HasColumnType("nvarchar(max)");
 
@@ -369,8 +490,8 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -436,6 +557,17 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Rack.Domain.Entities.Card", b =>
+                {
+                    b.HasOne("Rack.Domain.Entities.Device", "Device")
+                        .WithMany("Cards")
+                        .HasForeignKey("DeviceID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
             modelBuilder.Entity("Rack.Domain.Entities.ConfigurationItem", b =>
                 {
                     b.HasOne("Rack.Domain.Entities.Device", "Device")
@@ -474,6 +606,23 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Navigation("DataCenter");
                 });
 
+            modelBuilder.Entity("Rack.Domain.Entities.Port", b =>
+                {
+                    b.HasOne("Rack.Domain.Entities.Card", "Card")
+                        .WithMany("Ports")
+                        .HasForeignKey("CardID");
+
+                    b.HasOne("Rack.Domain.Entities.Device", "Device")
+                        .WithMany("Ports")
+                        .HasForeignKey("DeviceID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Card");
+
+                    b.Navigation("Device");
+                });
+
             modelBuilder.Entity("Rack.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("Rack.Domain.Entities.Account", "Account")
@@ -504,6 +653,11 @@ namespace Rack.MainInfrastructure.Migrations
                     b.Navigation("Device");
                 });
 
+            modelBuilder.Entity("Rack.Domain.Entities.Card", b =>
+                {
+                    b.Navigation("Ports");
+                });
+
             modelBuilder.Entity("Rack.Domain.Entities.Customer", b =>
                 {
                     b.Navigation("ServerRentals");
@@ -516,9 +670,13 @@ namespace Rack.MainInfrastructure.Migrations
 
             modelBuilder.Entity("Rack.Domain.Entities.Device", b =>
                 {
+                    b.Navigation("Cards");
+
                     b.Navigation("ChildDevices");
 
                     b.Navigation("ConfigurationItems");
+
+                    b.Navigation("Ports");
 
                     b.Navigation("ServerRentals");
                 });
