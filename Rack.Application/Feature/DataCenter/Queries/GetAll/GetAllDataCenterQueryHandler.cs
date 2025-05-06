@@ -16,9 +16,9 @@ internal class GetAllDataCenterQueryHandler(IUnitOfWork unitOfWork)
         try
         {
             var dataCenterRepository = unitOfWork.GetRepository<Domain.Entities.DataCenter>();
-
-            // Truy vấn và ánh xạ dữ liệu
-            var dataCenterResult = await dataCenterRepository.BuildQuery
+            
+            // Sử dụng Query thay vì BuildQuery để tận dụng AsNoTracking
+            var dataCenters = await dataCenterRepository.Query
                 .Select(dc => new DataCenterResponse
                 {
                     Id = dc.Id,
@@ -44,13 +44,11 @@ internal class GetAllDataCenterQueryHandler(IUnitOfWork unitOfWork)
                 })
                 .ToListAsync(cancellationToken);
 
-            return Response<List<DataCenterResponse>>.Success(dataCenterResult);
+            return Response<List<DataCenterResponse>>.Success(dataCenters);
         }
         catch (Exception ex)
         {
-            return Response<List<DataCenterResponse>>.Failure(
-                Error.Failure()
-            );
+            return Response<List<DataCenterResponse>>.Failure(Error.Failure());
         }
     }
 }

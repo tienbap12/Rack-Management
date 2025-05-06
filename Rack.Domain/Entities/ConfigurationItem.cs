@@ -8,7 +8,6 @@ namespace Rack.Domain.Entities
     {
         public Guid DeviceID { get; set; }
         public string ConfigType { get; set; } = null!;
-        public string? SerialNumber { get; set; }
         public string ConfigValue { get; set; } = null!;
         public int Count { get; set; } = 1;
 

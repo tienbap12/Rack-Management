@@ -326,7 +326,7 @@ public sealed class ZabbixService : IZabbixService
         {
             output = new[] { "eventid", "name", "severity", "clock", "acknowledged" },
             recent = "true",
-            sortfield =  "eventid" ,
+            sortfield = "eventid",
             sortorder = "DESC",
             limit = limit,
             severities = severityThreshold > 0

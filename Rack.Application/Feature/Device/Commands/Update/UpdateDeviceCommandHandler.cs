@@ -65,7 +65,8 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                 {
                     DeviceID = device.Id,
                     ConfigType = ci.ConfigType,
-                    ConfigValue = ci.ConfigValue
+                    ConfigValue = ci.ConfigValue,
+                    Count = ci.Count
                 });
 
             await configItemRepo.InsertRangeAsync(newConfigs, cancellationToken);

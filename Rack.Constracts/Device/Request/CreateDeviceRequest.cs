@@ -1,6 +1,7 @@
 ﻿using Rack.Contracts.Card.Request;
 using Rack.Contracts.ConfigurationItem.Requests;
 using Rack.Contracts.Port.Request;
+using Rack.Contracts.PortConnection.Request;
 using Rack.Domain.Enum;
 
 namespace Rack.Contracts.Device.Requests;
@@ -27,6 +28,7 @@ public record CreateDeviceRequest(
     List<CreateConfigurationItemRequest>? ConfigurationItems,
     List<CreateCardRequest>? Cards,
     List<CreatePortRequest>? Ports,
+    List<CreatePortConnectionRequest>? PortConnections,
     List<CreateChildDeviceRequest>? ChildDevices
 );
 
@@ -42,5 +44,6 @@ public record CreateChildDeviceRequest(
     string SlotInParent,
     List<CreateConfigurationItemRequest>? ConfigurationItems,
     List<CreateCardRequest>? Cards,
-    List<CreatePortRequest>? Ports
+    List<CreatePortRequest>? Ports,
+    List<CreatePortConnectionRequest>? PortConnections
 );

@@ -14,6 +14,8 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Rack.MainInfrastructure.Data
 {
     public class RackManagementContext : DbContext, IUnitOfWork
@@ -21,6 +23,7 @@ namespace Rack.MainInfrastructure.Data
         private IDbContextTransaction? _transaction;
         private readonly IUserContext _userContext;
         private readonly ConcurrentDictionary<Type, object> _repositories = new();
+        private readonly SemaphoreSlim _transactionLock = new(1, 1);
 
         public RackManagementContext(
             DbContextOptions<RackManagementContext> options,
@@ -47,6 +50,9 @@ namespace Rack.MainInfrastructure.Data
         public DbSet<Account> Accounts => Set<Account>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<Role> Roles => Set<Role>();
+        public DbSet<PortConnection> PortConnections => Set<PortConnection>();
+        public DbSet<Port> Ports => Set<Port>();    
+        public DbSet<Card> Cards => Set<Card>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,6 +88,18 @@ namespace Rack.MainInfrastructure.Data
                 .WithMany(r => r.Devices)
                 .HasForeignKey(d => d.RackID)
                 .OnDelete(DeleteBehavior.ClientSetNull);
+
+            modelBuilder.Entity<PortConnection>()
+                .HasOne(pc => pc.SourcePort)
+                .WithMany()
+                .HasForeignKey(pc => pc.SourcePortID)
+                .OnDelete(DeleteBehavior.Restrict); // 👈 Không tự động xóa
+
+            modelBuilder.Entity<PortConnection>()
+                .HasOne(pc => pc.DestinationPort)
+                .WithMany()
+                .HasForeignKey(pc => pc.DestinationPortID)
+                .OnDelete(DeleteBehavior.Restrict); // 👈 Không tự động xóa
         }
 
         private void ConfigureQueryFilters(ModelBuilder modelBuilder)
@@ -149,37 +167,75 @@ namespace Rack.MainInfrastructure.Data
 
         #region UnitOfWork Implementation
 
+        public bool HasActiveTransaction => _transaction != null;
+
+        public async Task<TResult> ExecuteInTransactionAsync<TResult>(
+            Func<Task<TResult>> action,
+            CancellationToken cancellationToken = default)
+        {
+            await BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var result = await action();
+                await CommitAsync(cancellationToken);
+                return result;
+            }
+            catch
+            {
+                await RollBackAsync(cancellationToken);
+                throw;
+            }
+        }
+
         public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
-            if (_transaction == null)
+            await _transactionLock.WaitAsync(cancellationToken);
+            try
             {
-                _transaction = await Database.BeginTransactionAsync(cancellationToken);
+                if (_transaction == null)
+                {
+                    _transaction = await Database.BeginTransactionAsync(cancellationToken);
+                }
+            }
+            finally
+            {
+                _transactionLock.Release();
             }
         }
 
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
+            await _transactionLock.WaitAsync(cancellationToken);
             try
             {
                 if (_transaction != null)
                 {
                     await _transaction.CommitAsync(cancellationToken);
                     await _transaction.DisposeAsync();
+                    _transaction = null;
                 }
             }
             finally
             {
-                _transaction = null;
+                _transactionLock.Release();
             }
         }
 
         public async Task RollBackAsync(CancellationToken cancellationToken = default)
         {
-            if (_transaction != null)
+            await _transactionLock.WaitAsync(cancellationToken);
+            try
             {
-                await _transaction.RollbackAsync(cancellationToken);
-                await _transaction.DisposeAsync();
-                _transaction = null;
+                if (_transaction != null)
+                {
+                    await _transaction.RollbackAsync(cancellationToken);
+                    await _transaction.DisposeAsync();
+                    _transaction = null;
+                }
+            }
+            finally
+            {
+                _transactionLock.Release();
             }
         }
 
@@ -203,7 +259,10 @@ namespace Rack.MainInfrastructure.Data
 
         public IGenericRepository<TEntity> GetRepository<TEntity>() where TEntity : Entity
         {
-            return new GenericRepository<TEntity>(this);
+            return (IGenericRepository<TEntity>)_repositories.GetOrAdd(
+                typeof(TEntity),
+                _ => new GenericRepository<TEntity>(this)
+            );
         }
 
         async Task<int> IUnitOfWork.SaveChangesAsync(CancellationToken cancellation)
@@ -211,6 +270,12 @@ namespace Rack.MainInfrastructure.Data
             UpdateAuditableEntities();
             HandleSoftDelete();
             return await base.SaveChangesAsync(cancellation);
+        }
+
+        public override void Dispose()
+        {
+            _transactionLock.Dispose();
+            base.Dispose();
         }
     }
 }

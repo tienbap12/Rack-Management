@@ -8,7 +8,9 @@ namespace Rack.Application.Feature.Customer.Commands.Update
         public async Task<Response> Handle(UpdateCustomerCommand request, CancellationToken cancellationToken)
         {
             var customerRepo = unitOfWork.GetRepository<Domain.Entities.Customer>();
-            var existingCustomer = await customerRepo.GetByIdAsync(request.CustomerId, cancellationToken);
+            
+            // Sử dụng GetByIdWithTrackingAsync vì cần tracking để cập nhật
+            var existingCustomer = await customerRepo.GetByIdWithTrackingAsync(request.CustomerId, cancellationToken);
             if (existingCustomer == null)
             {
                 return Response.Failure(Error.NotFound());
@@ -17,7 +19,8 @@ namespace Rack.Application.Feature.Customer.Commands.Update
             existingCustomer.Name = request.Name;
             existingCustomer.ContactInfo = request.ContactInfo;
 
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            // Sử dụng UpdateAsync thay vì SaveChangesAsync
+            await customerRepo.UpdateAsync(existingCustomer, cancellationToken);
             return Response.Success();
         }
     }

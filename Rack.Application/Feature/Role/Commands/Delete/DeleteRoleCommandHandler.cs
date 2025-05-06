@@ -10,12 +10,19 @@ public class DeleteRoleCommandHandler(IUnitOfWork _unitOfWork) : ICommandHandler
     public async Task<Response> Handle(DeleteRoleCommand request, CancellationToken cancellationToken)
     {
         var roleRepository = _unitOfWork.GetRepository<Domain.Entities.Role>();
-        var role = await roleRepository.GetByIdAsync(request.Id, cancellationToken);
+        
+        // Sử dụng GetByIdWithTrackingAsync vì cần tracking để xóa
+        var role = await roleRepository.GetByIdWithTrackingAsync(request.Id, cancellationToken);
         if (role == null)
         {
             return Response.Failure(Error.NotFound());
         }
-        var existedUserHaveRole = await roleRepository.BuildQuery.Include(a => a.Accounts).AnyAsync(a => a.Accounts.Any(a => a.RoleId == role.Id), cancellationToken);
+
+        // Sử dụng ExistsAsync thay vì BuildQuery.Include
+        var existedUserHaveRole = await roleRepository.ExistsAsync(
+            r => r.Accounts.Any(a => a.RoleId == role.Id), 
+            cancellationToken);
+
         if (existedUserHaveRole)
         {
             return Response.Failure(Error.BadRequest());

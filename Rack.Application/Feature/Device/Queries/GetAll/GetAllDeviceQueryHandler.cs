@@ -1,6 +1,10 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Rack.Contracts.Card.Response;
+using Rack.Contracts.ConfigurationItem.Response;
 using Rack.Contracts.Device.Responses;
+using Rack.Contracts.Port.Response;
+using Rack.Contracts.PortConnection.Response;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 using Rack.Domain.Enum;
@@ -17,42 +21,84 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
         try
         {
             var deviceRepository = unitOfWork.GetRepository<Domain.Entities.Device>();
+            var portConnectionRepository = unitOfWork.GetRepository<Domain.Entities.PortConnection>();
 
-            // Bắt đầu trực tiếp từ BuildQuery trả về IQueryable
-            IQueryable<Domain.Entities.Device> query = deviceRepository.BuildQuery; // Giả sử BuildQuery trả về IQueryable<Device>
+            // Lấy danh sách devices với các thông tin liên quan
+            var devices = await deviceRepository.BuildQuery
+                .Include(d => d.ConfigurationItems)
+                .Include(d => d.Cards)
+                    .ThenInclude(c => c.Ports)
+                .Include(d => d.Ports)
+                .Include(d => d.ChildDevices)
+                .Where(d => !d.IsDeleted)
+                .Where(d => request.Id == null || (request.Id == Guid.Empty ? d.RackID == null : d.RackID == request.Id))
+                .Where(d => request.Status == null || d.Status == request.Status)
+                .ToListAsync(cancellationToken);
 
-            // --- Áp dụng bộ lọc động ---
+            // Lấy tất cả PortIds từ tất cả devices
+            var allPortIds = devices
+                .SelectMany(d => d.Ports.Select(p => p.Id))
+                .Union(devices.SelectMany(d => d.Cards.SelectMany(c => c.Ports.Select(p => p.Id))))
+                .ToList();
 
-            // 1. Lọc theo RackId nếu được cung cấp
-            if (request.Id.HasValue) // Đã đổi tên thành RackId
+            // Lấy tất cả PortConnections liên quan
+            var portConnections = await portConnectionRepository.BuildQuery
+                .Where(pc => allPortIds.Contains(pc.SourcePortID) || allPortIds.Contains(pc.DestinationPortID))
+                .ToListAsync(cancellationToken);
+
+            // Map sang response
+            var deviceResponses = devices.Select(device =>
             {
-                // Quy ước: Guid.Empty dùng để tìm device chưa có RackID (unmounted)
-                if (request.Id == Guid.Empty)
+                var deviceResponse = device.Adapt<DeviceResponse>();
+                return deviceResponse with
                 {
-                    // GÁN LẠI KẾT QUẢ CHO query
-                    query = query.Where(d => d.RackID == null);
-                }
-                else
-                {
-                    // GÁN LẠI KẾT QUẢ CHO query
-                    query = query.Where(d => d.RackID == request.Id.Value);
-                }
-            }
+                    ConfigurationItems = device.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
+                    Cards = device.Cards?.Select(c =>
+                    {
+                        var cardResponse = c.Adapt<CardResponse>();
+                        return cardResponse with
+                        {
+                            Ports = c.Ports?.Select(p =>
+                            {
+                                var portResponse = p.Adapt<PortResponse>();
+                                return portResponse with
+                                {
+                                    Connections = portConnections
+                                        .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
+                                        .Select(pc => pc.Adapt<PortConnectionResponse>())
+                                        .ToList()
+                                };
+                            }).ToList()
+                        };
+                    }).ToList(),
+                    Ports = device.Ports?.Select(p =>
+                    {
+                        var portResponse = p.Adapt<PortResponse>();
+                        return portResponse with
+                        {
+                            Connections = portConnections
+                                .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
+                                .Select(pc => pc.Adapt<PortConnectionResponse>())
+                                .ToList()
+                        };
+                    }).ToList(),
+                    PortConnections = portConnections.Select(pc => pc.Adapt<PortConnectionResponse>()).ToList(),
+                    ChildDevices = device.ChildDevices?.Select(cd =>
+                    {
+                        var childResponse = cd.Adapt<DeviceResponse>();
+                        return childResponse with
+                        {
+                            ConfigurationItems = cd.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
+                            Cards = cd.Cards?.Select(c => c.Adapt<CardResponse>()).ToList(),
+                            Ports = cd.Ports?.Select(p => p.Adapt<PortResponse>()).ToList(),
+                            PortConnections = portConnections.Select(pc => pc.Adapt<PortConnectionResponse>()).ToList(),
+                            ChildDevices = null // Không lấy nested child devices
+                        };
+                    }).ToList()
+                };
+            }).ToList();
 
-            // 2. Lọc theo Status nếu được cung cấp
-            if (request.Status.HasValue)
-            {
-                // GÁN LẠI KẾT QUẢ CHO query
-                query = query.Where(d => d.Status == request.Status.Value);
-            }
-
-            // --- Thực thi truy vấn và lấy kết quả ---
-            var filteredDevices = await query.ToListAsync(cancellationToken);
-
-            // --- Ánh xạ sang DTO ---
-            var deviceResult = filteredDevices.Adapt<List<DeviceResponse>>();
-
-            return Response<List<DeviceResponse>>.Success(deviceResult);
+            return Response<List<DeviceResponse>>.Success(deviceResponses);
         }
         catch (Exception ex)
         {

@@ -8,4 +8,5 @@ public record ConfigurationItemResponse : BaseAuditDto
     public Guid DeviceId { get; init; }
     public string ConfigValue { get; init; }
     public string ConfigType { get; init; }
+    public int Count { get; init; }
 }
