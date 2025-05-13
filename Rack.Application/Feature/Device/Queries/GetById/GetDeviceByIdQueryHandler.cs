@@ -24,6 +24,7 @@ internal class GetDeviceByIdQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler
                 .ThenInclude(c => c.Ports)
             .Include(d => d.Ports)
             .Include(d => d.ChildDevices)
+            .Include(d => d.Rack)
             .FirstOrDefaultAsync(d => d.Id == request.Id && !d.IsDeleted, cancellationToken);
 
         if (device is null)
@@ -37,13 +38,17 @@ internal class GetDeviceByIdQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler
         var allPortIds = portIds.Union(cardPortIds).ToList();
 
         var portConnections = await portConnectionRepository.BuildQuery
+            .Include(pc => pc.SourcePort)
+                .ThenInclude(p => p.Device)
+            .Include(pc => pc.DestinationPort)
+                .ThenInclude(p => p.Device)
+            .Include(pc => pc.SourcePort.Device.Rack)
+            .Include(pc => pc.DestinationPort.Device.Rack)
             .Where(pc => allPortIds.Contains(pc.SourcePortID) || allPortIds.Contains(pc.DestinationPortID))
             .ToListAsync(cancellationToken);
 
         // Map sang response
         var deviceResponse = device.Adapt<DeviceResponse>();
-
-        // Sử dụng with để gán các property init-only
         deviceResponse = deviceResponse with
         {
             ConfigurationItems = device.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
@@ -57,9 +62,44 @@ internal class GetDeviceByIdQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler
                         var portResponse = p.Adapt<PortResponse>();
                         portResponse = portResponse with
                         {
-                            Connections = portConnections
-                                .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
-                                .Select(pc => pc.Adapt<PortConnectionResponse>())
+                            PortConnections = portConnections
+                                .Where(pc => pc.SourcePortID == p.Id)
+                                .Select(pc => new PortConnectionResponse
+                                {
+                                    Id = pc.Id,
+                                    SourcePortID = pc.SourcePortID,
+                                    DestinationPortID = pc.DestinationPortID,
+                                    CableType = pc.CableType,
+                                    Comment = pc.Comment,
+                                    SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto {
+                                        Id = pc.SourcePort.Device.Id,
+                                        RackName = pc.SourcePort.Device.Rack?.RackNumber,
+                                        Slot = pc.SourcePort.Device.UPosition?.ToString(),
+                                        DeviceName = pc.SourcePort.Device.Name
+                                    } : null,
+                                    SourcePort = pc.SourcePort?.Adapt<PortResponse>(),
+                                    DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                        Id = pc.DestinationPort.Device.Id,
+                                        RackName = pc.DestinationPort.Device.Rack?.RackNumber,
+                                        Slot = pc.DestinationPort.Device.UPosition?.ToString(),
+                                        DeviceName = pc.DestinationPort.Device.Name
+                                    } : null,
+                                    DestinationPort = pc.DestinationPort?.Adapt<PortResponse>(),
+                                    RemoteDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                        Id = pc.DestinationPort.Device.Id,
+                                        RackName = pc.DestinationPort.Device.Rack?.RackNumber,
+                                        Slot = pc.DestinationPort.Device.UPosition?.ToString(),
+                                        DeviceName = pc.DestinationPort.Device.Name
+                                    } : null,
+                                    RemotePort = pc.DestinationPort?.Adapt<PortResponse>(),
+                                    CreatedBy = pc.CreatedBy,
+                                    CreatedOn = pc.CreatedOn,
+                                    LastModifiedBy = pc.LastModifiedBy,
+                                    LastModifiedOn = pc.LastModifiedOn,
+                                    IsDeleted = pc.IsDeleted,
+                                    DeletedBy = pc.DeletedBy,
+                                    DeletedOn = pc.DeletedOn
+                                })
                                 .ToList()
                         };
                         return portResponse;
@@ -72,9 +112,44 @@ internal class GetDeviceByIdQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler
                 var portResponse = p.Adapt<PortResponse>();
                 portResponse = portResponse with
                 {
-                    Connections = portConnections
-                        .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
-                        .Select(pc => pc.Adapt<PortConnectionResponse>())
+                    PortConnections = portConnections
+                        .Where(pc => pc.SourcePortID == p.Id)
+                        .Select(pc => new PortConnectionResponse
+                        {
+                            Id = pc.Id,
+                            SourcePortID = pc.SourcePortID,
+                            DestinationPortID = pc.DestinationPortID,
+                            CableType = pc.CableType,
+                            Comment = pc.Comment,
+                            SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto {
+                                Id = pc.SourcePort.Device.Id,
+                                RackName = pc.SourcePort.Device.Rack?.RackNumber,
+                                Slot = pc.SourcePort.Device.UPosition?.ToString(),
+                                DeviceName = pc.SourcePort.Device.Name
+                            } : null,
+                            SourcePort = pc.SourcePort?.Adapt<PortResponse>(),
+                            DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                Id = pc.DestinationPort.Device.Id,
+                                RackName = pc.DestinationPort.Device.Rack?.RackNumber,
+                                Slot = pc.DestinationPort.Device.UPosition?.ToString(),
+                                DeviceName = pc.DestinationPort.Device.Name
+                            } : null,
+                            DestinationPort = pc.DestinationPort?.Adapt<PortResponse>(),
+                            RemoteDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                Id = pc.DestinationPort.Device.Id,
+                                RackName = pc.DestinationPort.Device.Rack?.RackNumber,
+                                Slot = pc.DestinationPort.Device.UPosition?.ToString(),
+                                DeviceName = pc.DestinationPort.Device.Name
+                            } : null,
+                            RemotePort = pc.DestinationPort?.Adapt<PortResponse>(),
+                            CreatedBy = pc.CreatedBy,
+                            CreatedOn = pc.CreatedOn,
+                            LastModifiedBy = pc.LastModifiedBy,
+                            LastModifiedOn = pc.LastModifiedOn,
+                            IsDeleted = pc.IsDeleted,
+                            DeletedBy = pc.DeletedBy,
+                            DeletedOn = pc.DeletedOn
+                        })
                         .ToList()
                 };
                 return portResponse;
@@ -94,7 +169,6 @@ internal class GetDeviceByIdQueryHandler(IUnitOfWork unitOfWork) : IQueryHandler
                 return childResponse;
             }).ToList()
         };
-
         return Response<DeviceResponse>.Success(deviceResponse);
     }
 }

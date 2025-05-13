@@ -43,6 +43,11 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
 
             // Lấy tất cả PortConnections liên quan
             var portConnections = await portConnectionRepository.BuildQuery
+                .Include(pc => pc.SourcePort)
+                    .ThenInclude(p => p.Device)
+                .Include(pc => pc.DestinationPort)
+                    .ThenInclude(p => p.Device)
+                .Include(pc => pc.SourcePort.Device.Rack)
                 .Where(pc => allPortIds.Contains(pc.SourcePortID) || allPortIds.Contains(pc.DestinationPortID))
                 .ToListAsync(cancellationToken);
 
@@ -50,52 +55,133 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
             var deviceResponses = devices.Select(device =>
             {
                 var deviceResponse = device.Adapt<DeviceResponse>();
-                return deviceResponse with
+                if (device.DeviceType.ToLower() == "server")
                 {
-                    ConfigurationItems = device.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
-                    Cards = device.Cards?.Select(c =>
+                    return deviceResponse with
                     {
-                        var cardResponse = c.Adapt<CardResponse>();
-                        return cardResponse with
+                        ConfigurationItems = device.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
+                        Cards = device.Cards?.Select(c =>
                         {
-                            Ports = c.Ports?.Select(p =>
+                            var cardResponse = c.Adapt<CardResponse>();
+                            return cardResponse with
                             {
-                                var portResponse = p.Adapt<PortResponse>();
-                                return portResponse with
+                                Ports = c.Ports?.Select(p =>
                                 {
-                                    Connections = portConnections
-                                        .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
-                                        .Select(pc => pc.Adapt<PortConnectionResponse>())
-                                        .ToList()
-                                };
-                            }).ToList()
-                        };
-                    }).ToList(),
-                    Ports = device.Ports?.Select(p =>
-                    {
-                        var portResponse = p.Adapt<PortResponse>();
-                        return portResponse with
+                                    var portResponse = p.Adapt<PortResponse>();
+                                    return portResponse with
+                                    {
+                                        PortConnections = portConnections
+                                            .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
+                                            .Select(pc => new PortConnectionResponse
+                                            {
+                                                Id = pc.Id,
+                                                SourcePortID = pc.SourcePortID,
+                                                DestinationPortID = pc.DestinationPortID,
+                                                CableType = pc.CableType,
+                                                Comment = pc.Comment,
+                                                SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto {
+                                                    Id = pc.SourcePort.Device.Id,
+                                                    RackName = pc.SourcePort.Device.Rack?.RackNumber,
+                                                    Slot = pc.SourcePort.Device.UPosition?.ToString(),
+                                                    DeviceName = pc.SourcePort.Device.Name
+                                                } : null,
+                                                SourcePort = pc.SourcePort?.Adapt<PortResponse>(),
+                                                DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                                    Id = pc.DestinationPort.Device.Id,
+                                                    RackName = pc.DestinationPort.Device.Rack?.RackNumber,
+                                                    Slot = pc.DestinationPort.Device.UPosition?.ToString(),
+                                                    DeviceName = pc.DestinationPort.Device.Name
+                                                } : null,
+                                                DestinationPort = pc.DestinationPort?.Adapt<PortResponse>(),
+                                                CreatedBy = pc.CreatedBy,
+                                                CreatedOn = pc.CreatedOn,
+                                                LastModifiedBy = pc.LastModifiedBy,
+                                                LastModifiedOn = pc.LastModifiedOn,
+                                                IsDeleted = pc.IsDeleted,
+                                                DeletedBy = pc.DeletedBy,
+                                                DeletedOn = pc.DeletedOn
+                                            })
+                                            .ToList()
+                                    };
+                                }).ToList()
+                            };
+                        }).ToList(),
+                        Ports = null,
+                        PortConnections = null,
+                        ChildDevices = device.ChildDevices?.Select(cd =>
                         {
-                            Connections = portConnections
-                                .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
-                                .Select(pc => pc.Adapt<PortConnectionResponse>())
-                                .ToList()
-                        };
-                    }).ToList(),
-                    PortConnections = portConnections.Select(pc => pc.Adapt<PortConnectionResponse>()).ToList(),
-                    ChildDevices = device.ChildDevices?.Select(cd =>
+                            var childResponse = cd.Adapt<DeviceResponse>();
+                            return childResponse with
+                            {
+                                ConfigurationItems = cd.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
+                                Cards = cd.Cards?.Select(c => c.Adapt<CardResponse>()).ToList(),
+                                Ports = cd.Ports?.Select(p => p.Adapt<PortResponse>()).ToList(),
+                                PortConnections = null,
+                                ChildDevices = null
+                            };
+                        }).ToList()
+                    };
+                }
+                else
+                {
+                    return deviceResponse with
                     {
-                        var childResponse = cd.Adapt<DeviceResponse>();
-                        return childResponse with
+                        ConfigurationItems = device.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
+                        Cards = null,
+                        Ports = device.Ports?.Select(p =>
                         {
-                            ConfigurationItems = cd.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
-                            Cards = cd.Cards?.Select(c => c.Adapt<CardResponse>()).ToList(),
-                            Ports = cd.Ports?.Select(p => p.Adapt<PortResponse>()).ToList(),
-                            PortConnections = portConnections.Select(pc => pc.Adapt<PortConnectionResponse>()).ToList(),
-                            ChildDevices = null // Không lấy nested child devices
-                        };
-                    }).ToList()
-                };
+                            var portResponse = p.Adapt<PortResponse>();
+                            return portResponse with
+                            {
+                                PortConnections = portConnections
+                                    .Where(pc => pc.SourcePortID == p.Id || pc.DestinationPortID == p.Id)
+                                    .Select(pc => new PortConnectionResponse
+                                    {
+                                        Id = pc.Id,
+                                        SourcePortID = pc.SourcePortID,
+                                        DestinationPortID = pc.DestinationPortID,
+                                        CableType = pc.CableType,
+                                        Comment = pc.Comment,
+                                        SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto {
+                                            Id = pc.SourcePort.Device.Id,
+                                            RackName = pc.SourcePort.Device.Rack?.RackNumber,
+                                            Slot = pc.SourcePort.Device.UPosition?.ToString(),
+                                            DeviceName = pc.SourcePort.Device.Name
+                                        } : null,
+                                        SourcePort = pc.SourcePort?.Adapt<PortResponse>(),
+                                        DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                            Id = pc.DestinationPort.Device.Id,
+                                            RackName = pc.DestinationPort.Device.Rack?.RackNumber,
+                                            Slot = pc.DestinationPort.Device.UPosition?.ToString(),
+                                            DeviceName = pc.DestinationPort.Device.Name
+                                        } : null,
+                                        DestinationPort = pc.DestinationPort?.Adapt<PortResponse>(),
+                                        CreatedBy = pc.CreatedBy,
+                                        CreatedOn = pc.CreatedOn,
+                                        LastModifiedBy = pc.LastModifiedBy,
+                                        LastModifiedOn = pc.LastModifiedOn,
+                                        IsDeleted = pc.IsDeleted,
+                                        DeletedBy = pc.DeletedBy,
+                                        DeletedOn = pc.DeletedOn
+                                    })
+                                    .ToList()
+                            };
+                        }).ToList(),
+                        PortConnections = portConnections.Select(pc => pc.Adapt<PortConnectionResponse>()).ToList(),
+                        ChildDevices = device.ChildDevices?.Select(cd =>
+                        {
+                            var childResponse = cd.Adapt<DeviceResponse>();
+                            return childResponse with
+                            {
+                                ConfigurationItems = cd.ConfigurationItems?.Select(ci => ci.Adapt<ConfigurationItemResponse>()).ToList(),
+                                Cards = null,
+                                Ports = cd.Ports?.Select(p => p.Adapt<PortResponse>()).ToList(),
+                                PortConnections = null,
+                                ChildDevices = null
+                            };
+                        }).ToList()
+                    };
+                }
             }).ToList();
 
             return Response<List<DeviceResponse>>.Success(deviceResponses);

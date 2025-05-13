@@ -29,7 +29,11 @@ public static class ApiRoutesV1
         // DELETE api/v1/components/{componentId:guid}
         public const string Delete = ControllerBase + "/{componentId:guid}";
     }
-
+    public static class PortConnection
+    {
+        private const string ControllerBase = Base + "/port-connections";
+        public const string GetById = ControllerBase + "/{portConnectionId:guid}";
+    }
     public static class DataCenter
     {
         // Sử dụng tên resource số nhiều và làm base cho controller này
@@ -155,4 +159,26 @@ public static class ApiRoutesV1
         public const string Update = ControllerBase + "/{rentalId:guid}";
         public const string Delete = ControllerBase + "/{rentalId:guid}";
     }
+
+    public static class Port
+    {
+        private const string ControllerBase = Base + "/ports";
+
+        public const string GetAll = ControllerBase;
+        public const string GetById = ControllerBase + "/{portId:guid}";
+        public const string Create = ControllerBase;
+        public const string Update = ControllerBase + "/{portId:guid}";
+        public const string Delete = ControllerBase + "/{portId:guid}";
+    }
+
+    // public static class Card
+    // {
+    //     private const string Base = $"{ApiBase}/cards";
+
+    //     public const string GetAll = Base;
+    //     public const string GetById = $"{Base}/{{cardId:guid}}";
+    //     public const string Create = Base;
+    //     public const string Update = $"{Base}/{{cardId:guid}}";
+    //     public const string Delete = $"{Base}/{{cardId:guid}}";
+    // }
 }

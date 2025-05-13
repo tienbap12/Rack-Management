@@ -5,10 +5,11 @@ namespace Rack.Contracts.Port.Response
 {
     public record PortResponse : BaseAuditDto
     {
-    public Guid DeviceID { get; init; }
-    public Guid? CardID { get; init; }
-    public string PortName { get; init; } = null!;
-    public string PortType { get; init; } = null!;
-    public IEnumerable<PortConnectionResponse>? Connections { get; init; } = new List<PortConnectionResponse>();
+        public Guid Id { get; init; }
+        public Guid DeviceID { get; init; }
+        public Guid? CardID { get; init; }
+        public string PortName { get; init; } = null!;
+        public string PortType { get; init; } = null!;
+        public IEnumerable<PortConnectionResponse>? PortConnections { get; init; } = new List<PortConnectionResponse>();
     }
 }

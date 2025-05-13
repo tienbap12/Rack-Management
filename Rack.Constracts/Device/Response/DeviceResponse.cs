@@ -12,6 +12,7 @@ public record DeviceResponse : BaseAuditDto
     public Guid Id { get; init; }
     public Guid? ParentDeviceID { get; init; }
     public Guid? RackID { get; init; }
+    public string? RackName { get; init; }
     public int Size { get; init; }
     public string Name { get; init; }
     public string IpAddress { get; init; }

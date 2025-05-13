@@ -16,6 +16,7 @@ public record UpdateDeviceRequest(
     string? IpAddress,
     string? Manufacturer,
     string? SerialNumber,
+    string? LinkIdPage,
     string? Model,
     DeviceStatus? Status,
     List<CreateCardRequest>? Cards,

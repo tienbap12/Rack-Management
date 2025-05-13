@@ -21,7 +21,7 @@ public class CreateDeviceCommand(CreateDeviceRequest request) : ICommand<Respons
     public string DeviceType => request.DeviceType;
     public string? Manufacturer => request.Manufacturer;
     public string? SerialNumber => request.SerialNumber;
-    public string? LinkPageId => request.LinkIdPage;
+    public string? LinkIdPage => request.LinkIdPage;
     public string? Model => request.Model;
     public DeviceStatus Status => request.Status;
     public List<CreateConfigurationItemRequest>? ConfigurationItems => request.ConfigurationItems;
