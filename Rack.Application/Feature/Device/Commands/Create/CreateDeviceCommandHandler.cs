@@ -37,7 +37,6 @@ internal class CreateDeviceCommandHandler(IUnitOfWork unitOfWork)
         if (!validationResult.IsSuccess)
             return Response<DeviceResponse>.Failure(validationResult.Error);
 
-        await unitOfWork.BeginTransactionAsync(cancellationToken);
         try
         {
             // --- Tạo Device chính ---
@@ -182,8 +181,6 @@ internal class CreateDeviceCommandHandler(IUnitOfWork unitOfWork)
                 }
             }
 
-            await unitOfWork.CommitAsync(cancellationToken);
-
             // Truy vấn lại device với các thông tin liên quan
             var device = await deviceRepository.BuildQuery
                 .Include(d => d.ConfigurationItems)
@@ -282,7 +279,6 @@ internal class CreateDeviceCommandHandler(IUnitOfWork unitOfWork)
         }
         catch (Exception ex)
         {
-            await unitOfWork.RollBackAsync(cancellationToken);
             return Response<DeviceResponse>.Failure(
                 Error.Failure(message: $"An error occurred while creating the device: {ex.Message}"),
                 HttpStatusCodeEnum.InternalServerError);

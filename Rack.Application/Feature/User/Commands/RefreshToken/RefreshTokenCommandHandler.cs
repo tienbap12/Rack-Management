@@ -11,7 +11,7 @@ internal class RefreshTokenCommandHandler(IUnitOfWork unitOfWork, IJwtProvider j
 {
     public async Task<Response<TokenResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
-        await unitOfWork.BeginTransactionAsync(cancellationToken);
+        //            await unitOfWork.BeginTransactionAsync(cancellationToken);
         var tokenRepo = unitOfWork.GetRepository<Domain.Entities.RefreshToken>();
 
         var existingToken = await tokenRepo.BuildQuery

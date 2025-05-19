@@ -9,6 +9,7 @@ using Rack.Domain.Enum;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -83,7 +84,11 @@ namespace Rack.API.Controllers
         {
             try
             {
-                var result = await _minioService.GeneratePresignedDownloadUrlAsync(bucketName, fileKey);
+                // Decode fileKey khi nhận từ frontend
+                string decodedFileKey = WebUtility.UrlDecode(fileKey);
+                _logger.LogInformation("Decoded file key: {DecodedFileKey} from {EncodedFileKey}", decodedFileKey, fileKey);
+
+                var result = await _minioService.GeneratePresignedDownloadUrlAsync(bucketName, decodedFileKey);
                 return new SuccessApiResponseDto<PresignedUrlResultDto>(
                     "Tạo URL download thành công",
                     HttpStatusCodeEnum.OK,
@@ -110,7 +115,11 @@ namespace Rack.API.Controllers
         {
             try
             {
-                var success = await _minioService.DeleteFileAsync(bucketName, fileKey);
+                // Decode fileKey khi nhận từ frontend
+                string decodedFileKey = WebUtility.UrlDecode(fileKey);
+                _logger.LogInformation("Decoded file key for delete: {DecodedFileKey} from {EncodedFileKey}", decodedFileKey, fileKey);
+
+                var success = await _minioService.DeleteFileAsync(bucketName, decodedFileKey);
 
                 return success
                     ? new SuccessApiResponseDto("Xóa file thành công", HttpStatusCodeEnum.OK)

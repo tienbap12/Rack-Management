@@ -5,10 +5,12 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Rack.Application.Commons.Behaviors{
+namespace Rack.Application.Commons.Behaviors
+{
     public class UnitOfWorkBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
-        where TResponse : notnull{
+        where TResponse : notnull
+    {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<UnitOfWorkBehavior<TRequest, TResponse>> _logger;
 
@@ -27,25 +29,8 @@ namespace Rack.Application.Commons.Behaviors{
         {
             var response = await next();
 
-            try
-            {
-                if (_unitOfWork.HasActiveTransaction)
-                {
-                    _logger.LogInformation("Committing transaction for {Request}", typeof(TRequest).Name);
-                    await _unitOfWork.CommitAsync(cancellationToken);
-                    _logger.LogInformation("Transaction committed successfully for {Request}", typeof(TRequest).Name);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while committing transaction for {Request}", typeof(TRequest).Name);
-                if (_unitOfWork.HasActiveTransaction)
-                {
-                    _logger.LogInformation("Rolling back transaction for {Request}", typeof(TRequest).Name);
-                    await _unitOfWork.RollBackAsync(cancellationToken);
-                }
-                throw;
-            }
+            // Bỏ logic commit/rollback transaction thủ công để tránh lỗi với SqlServerRetryingExecutionStrategy
+            // Nếu cần transaction, hãy dùng SaveChangesAsync hoặc execution strategy ở handler
 
             return response;
         }

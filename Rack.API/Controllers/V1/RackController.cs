@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Rack.API.Contracts;
 using Rack.Application.Feature.DeviceRack.Commands.Create;
 using Rack.Application.Feature.DeviceRack.Commands.Delete;
@@ -12,13 +14,22 @@ namespace Rack.API.Controllers.V1;
 
 public class RackController : ApiController
 {
+    private readonly IMemoryCache _cache;
+    private readonly ILogger<RackController> _logger;
+
+    public RackController(IMemoryCache cache, ILogger<RackController> logger)
+    {
+        _cache = cache;
+        _logger = logger;
+    }
+
     [HttpGet]
     [Route(ApiRoutesV1.Rack.GetAll)]
     public async Task<IActionResult> GetAll()
     {
-        var query = new GetAllDeviceRackQuery();
+        var query = new GetAllDeviceRackQueryOptimized();
         var result = await Mediator.Send(query);
-        return ToActionResult(result);
+        return Ok(result);
     }
 
     [HttpGet]
@@ -36,6 +47,9 @@ public class RackController : ApiController
     {
         var command = new CreateDeviceRackCommand(request);
         var result = await Mediator.Send(command);
+
+        ClearCache();
+
         return ToActionResult(result);
     }
 
@@ -45,6 +59,9 @@ public class RackController : ApiController
     {
         var command = new UpdateDeviceRackCommand(rackId, request);
         var result = await Mediator.Send(command);
+
+        ClearCache();
+
         return ToActionResult(result);
     }
 
@@ -54,6 +71,15 @@ public class RackController : ApiController
     {
         var command = new DeleteDeviceRackCommand(rackId);
         var result = await Mediator.Send(command);
+
+        ClearCache();
+
         return ToActionResult(result);
+    }
+
+    private void ClearCache()
+    {
+        _logger.LogInformation("Clearing device racks cache");
+        _cache.Remove("device_racks_all");
     }
 }

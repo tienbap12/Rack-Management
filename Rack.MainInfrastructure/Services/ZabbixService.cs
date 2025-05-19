@@ -62,7 +62,11 @@ public sealed class ZabbixService : IZabbixService
         }
 
         // Cache results
-        _cache.Set(cacheKey, hosts, _cacheTimeout);
+        _cache.Set(cacheKey, hosts, new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = _cacheTimeout,
+            Size = hosts.Count
+        });
 
         return hosts;
     }
@@ -74,27 +78,49 @@ public sealed class ZabbixService : IZabbixService
         string? deviceType = null,
         CancellationToken cancellationToken = default)
     {
+        Console.WriteLine($"[GetHostsPagedAsync] Requested page: {page}, pageSize: {pageSize}, search: {searchTerm ?? "null"}, deviceType: {deviceType ?? "null"}");
+
+        // Debug: Xác nhận tham số trang và kích thước trang
+        var offset = (page - 1) * pageSize;
+        Console.WriteLine($"[GetHostsPagedAsync] Calculated offset: {offset} for page {page} with size {pageSize}");
+
+        // Tạo cache key duy nhất dựa trên tất cả tham số
+        string cacheKey = $"zabbix_hosts_paged_p{page}_s{pageSize}_search{searchTerm ?? "none"}_type{deviceType ?? "all"}";
+        if (_cache.TryGetValue(cacheKey, out IEnumerable<ZabbixHostSummary> cachedHosts))
+        {
+            Console.WriteLine($"[GetHostsPagedAsync] Returning {cachedHosts.Count()} cached hosts for page {page}");
+            return cachedHosts;
+        }
+
         var filter = new Dictionary<string, object> { { "status", "0" } };
 
-        // Build parameters
+        // Kiểm tra tham số truyền vào API Zabbix
+        Console.WriteLine($"[GetHostsPagedAsync] Zabbix API params: limit={pageSize}, offset={offset}");
+
+        // Xây dựng tham số - Quan trọng: offset phải là kiểu int không phải phép tính
+        int calculatedOffset = (page - 1) * pageSize; // Tính toán offset rõ ràng
         var hostParams = new
         {
             output = new[] { "hostid", "name", "status", "available", "proxy_hostid" },
             selectTags = "extend",
-            selectInterfaces = new[] { "ip", "type", "main" }, // Only needed interface fields
+            selectInterfaces = new[] { "ip", "type", "main" },
             filter,
             search = !string.IsNullOrEmpty(searchTerm) ? new { name = searchTerm } : null,
             limit = pageSize,
-            offset = (page - 1) * pageSize
+            offset = calculatedOffset // Sử dụng giá trị đã tính toán
         };
 
-        Console.WriteLine($"[GetHostsPagedAsync] Requesting paged hosts (page {page}, size {pageSize})...");
+        Console.WriteLine($"[GetHostsPagedAsync] Requesting paged hosts with offset {calculatedOffset} (page {page}, size {pageSize})...");
         var hosts = await ZabbixApiHelper.SendRequestAsync<List<ZabbixHostSummary>>(
             _httpClient, _apiUrl, _apiToken, "host.get", hostParams, cancellationToken);
 
-        if (hosts == null || !hosts.Any()) return Enumerable.Empty<ZabbixHostSummary>();
+        if (hosts == null || !hosts.Any())
+        {
+            Console.WriteLine($"[GetHostsPagedAsync] No hosts found for page {page}");
+            return Enumerable.Empty<ZabbixHostSummary>();
+        }
 
-        Console.WriteLine($"[GetHostsPagedAsync] Found {hosts.Count} hosts for page {page}.");
+        Console.WriteLine($"[GetHostsPagedAsync] Found {hosts.Count} hosts for page {page}. First host ID: {hosts.FirstOrDefault()?.HostId}");
 
         // Process hosts
         foreach (var host in hosts)
@@ -105,8 +131,21 @@ public sealed class ZabbixService : IZabbixService
         // Filter by device type if needed (client-side filter since it's derived from tags)
         if (!string.IsNullOrEmpty(deviceType))
         {
+            var filteredCount = hosts.Count;
             hosts = hosts.Where(h => h.DeviceType == deviceType).ToList();
+            filteredCount -= hosts.Count;
+            if (filteredCount > 0)
+            {
+                Console.WriteLine($"[GetHostsPagedAsync] Filtered out {filteredCount} hosts that don't match device type {deviceType}");
+            }
         }
+
+        // Lưu cache các kết quả với key duy nhất
+        _cache.Set(cacheKey, hosts, new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = _cacheTimeout,
+            Size = hosts.Count
+        });
 
         return hosts;
     }
@@ -122,12 +161,37 @@ public sealed class ZabbixService : IZabbixService
         string? ipAddress = null;
         if (host.Interfaces != null && host.Interfaces.Any())
         {
+            // Kiểm tra và log thông tin interfaces
+            Console.WriteLine($"[ProcessHostSummary] Host {host.HostId} has {host.Interfaces.Count()} interfaces");
+            foreach (var iface in host.Interfaces)
+            {
+                Console.WriteLine($"[ProcessHostSummary] Interface: Type={iface.Type}, Main={iface.Main}, IP={iface.Ip}");
+            }
+
+            // Thử lấy interface agent trước tiên
             var mainAgentInterface = host.Interfaces.FirstOrDefault(i => i.Type == "1" && i.Main == "1");
+            // Nếu không có, thử SNMP
             var mainSnmpInterface = host.Interfaces.FirstOrDefault(i => i.Type == "2" && i.Main == "1");
+            // Nếu không, lấy interface đầu tiên có IP hợp lệ
             var firstValidInterface = host.Interfaces.FirstOrDefault(i =>
                 !string.IsNullOrEmpty(i.Ip) && i.Ip != "0.0.0.0" && i.Ip != "127.0.0.1");
+
+            // Ưu tiên lấy IP theo thứ tự
             ipAddress = mainAgentInterface?.Ip ?? mainSnmpInterface?.Ip ?? firstValidInterface?.Ip;
+
+            // Nếu vẫn không có, lấy IP đầu tiên nếu có
+            if (string.IsNullOrEmpty(ipAddress) && host.Interfaces.Any(i => !string.IsNullOrEmpty(i.Ip)))
+            {
+                ipAddress = host.Interfaces.First(i => !string.IsNullOrEmpty(i.Ip)).Ip;
+            }
+
+            Console.WriteLine($"[ProcessHostSummary] Selected IP for host {host.HostId}: {ipAddress ?? "None"}");
         }
+        else
+        {
+            Console.WriteLine($"[ProcessHostSummary] Warning: Host {host.HostId} has no interfaces");
+        }
+
         host.IpAddress = ipAddress;
     }
 
@@ -162,7 +226,11 @@ public sealed class ZabbixService : IZabbixService
         if (hostDetail != null)
         {
             ProcessHostSummary(hostDetail);
-            _cache.Set(cacheKey, hostDetail, _cacheTimeout);
+            _cache.Set(cacheKey, hostDetail, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _cacheTimeout,
+                Size = 1
+            });
         }
         else
         {
@@ -268,7 +336,11 @@ public sealed class ZabbixService : IZabbixService
 
         if (items != null)
         {
-            _cache.Set(cacheKey, items, _cacheTimeout);
+            _cache.Set(cacheKey, items, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _cacheTimeout,
+                Size = items.Count
+            });
             Console.WriteLine($"[GetHostResourceItemsAsync] Returning {items.Count} detailed items for host {hostId}.");
             return items;
         }
@@ -325,7 +397,7 @@ public sealed class ZabbixService : IZabbixService
         var parameters = new
         {
             output = new[] { "eventid", "name", "severity", "clock", "acknowledged" },
-            recent = "true",
+            // recent = "true", // This parameter is causing errors in some Zabbix versions
             sortfield = "eventid",
             sortorder = "DESC",
             limit = limit,
@@ -341,7 +413,11 @@ public sealed class ZabbixService : IZabbixService
 
         if (problems != null)
         {
-            _cache.Set(cacheKey, problems, TimeSpan.FromMinutes(1)); // Short cache for problems
+            _cache.Set(cacheKey, problems, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1), // Short cache for problems
+                Size = problems.Count()
+            });
         }
 
         return problems ?? Enumerable.Empty<ZabbixProblemInfo>();
@@ -376,7 +452,11 @@ public sealed class ZabbixService : IZabbixService
 
         if (problems != null)
         {
-            _cache.Set(cacheKey, problems, TimeSpan.FromMinutes(1)); // Short cache for problems
+            _cache.Set(cacheKey, problems, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1),
+                Size = problems.Count()
+            });
         }
 
         return problems ?? Enumerable.Empty<ZabbixProblemInfo>();

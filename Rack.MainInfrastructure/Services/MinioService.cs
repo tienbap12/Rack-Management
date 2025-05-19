@@ -177,6 +177,7 @@ namespace Rack.MainInfrastructure.Services
             {
                 int expiry = _config.GetValue<int?>("MinIO:PresignedUrlExpirySeconds") ?? 600;
 
+                // PresignedGetObjectArgs không hỗ trợ thêm headers trực tiếp
                 var args = new PresignedGetObjectArgs()
                     .WithBucket(bucketName)
                     .WithObject(fileKey)

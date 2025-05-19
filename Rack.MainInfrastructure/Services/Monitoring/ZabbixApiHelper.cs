@@ -57,6 +57,10 @@ internal static class ZabbixApiHelper
             Id: requestId
         );
 
+        // Debug: Log tham số chi tiết
+        var jsonParameters = JsonSerializer.Serialize(parameters, _serializeOptions);
+        Console.WriteLine($"[ZabbixApiHelper] Sending request to method '{method}' with parameters: {jsonParameters}");
+
         HttpResponseMessage response = null!;
         try
         {
@@ -79,6 +83,16 @@ internal static class ZabbixApiHelper
                     $"Zabbix API error (Code: {error.Code}): {error.Message} - {error.Data}",
                     error.Code,
                     error.Data);
+            }
+
+            // Debug: Log kết quả thành công
+            if (zabbixResponse.Result is System.Collections.ICollection collection)
+            {
+                Console.WriteLine($"[ZabbixApiHelper] Successfully received {collection.Count} items from method '{method}'");
+            }
+            else
+            {
+                Console.WriteLine($"[ZabbixApiHelper] Successfully received response from method '{method}'");
             }
 
             return zabbixResponse.Result;

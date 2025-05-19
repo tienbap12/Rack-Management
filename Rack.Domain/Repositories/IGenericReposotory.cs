@@ -19,6 +19,7 @@ public interface IGenericRepository<TEntity> where TEntity : Entity
     Task<TEntity?> GetByIdWithTrackingAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<List<TEntity>> GetAllWithTrackingAsync(CancellationToken cancellationToken = default);
+    Task<int> CountAllAsync(CancellationToken cancellationToken = default);
 
     // Create methods
     Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default);

@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using Rack.Application.Commons.Interfaces;
 using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Commons.Primitives;
@@ -24,19 +26,33 @@ namespace Rack.MainInfrastructure.Data
         private readonly IUserContext _userContext;
         private readonly ConcurrentDictionary<Type, object> _repositories = new();
         private readonly SemaphoreSlim _transactionLock = new(1, 1);
+        private readonly IMemoryCache? _cache;
 
+        // Primary constructor for normal DI usage
         public RackManagementContext(
             DbContextOptions<RackManagementContext> options,
-            IUserContext userContext)
+            IUserContext userContext,
+            IMemoryCache cache)
             : base(options)
         {
             _userContext = userContext ??
                 throw new ArgumentNullException(nameof(userContext));
+            _cache = cache;
         }
 
+        // Minimal constructor for migrations & tests
         public RackManagementContext(DbContextOptions<RackManagementContext> options)
         : base(options)
         {
+            _userContext = new NoOpUserContext();
+        }
+
+        // Helper class for when no user context is provided
+        private class NoOpUserContext : IUserContext
+        {
+            public string GetUsername() => "System";
+            public Guid? GetUserId() => null;
+            public string GetRole() => "SystemAdmin";
         }
 
         // Expression-bodied DbSet properties for concise code
@@ -51,7 +67,7 @@ namespace Rack.MainInfrastructure.Data
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<Role> Roles => Set<Role>();
         public DbSet<PortConnection> PortConnections => Set<PortConnection>();
-        public DbSet<Port> Ports => Set<Port>();    
+        public DbSet<Port> Ports => Set<Port>();
         public DbSet<Card> Cards => Set<Card>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -66,6 +82,7 @@ namespace Rack.MainInfrastructure.Data
 
             ConfigureEntityRelations(modelBuilder);
             ConfigureQueryFilters(modelBuilder);
+            ConfigureIndexes(modelBuilder);
             //ConfigureSoftDeleteGlobalFilter(modelBuilder);
         }
 
@@ -126,6 +143,52 @@ namespace Rack.MainInfrastructure.Data
             }
         }
 
+        private void ConfigureIndexes(ModelBuilder modelBuilder)
+        {
+            // Indexes for DeviceRack
+            modelBuilder.Entity<DeviceRack>()
+                .HasIndex(r => r.RackNumber);
+            modelBuilder.Entity<DeviceRack>()
+                .HasIndex(r => r.DataCenterID);
+
+            // Indexes for Device
+            modelBuilder.Entity<Device>()
+                .HasIndex(d => d.Name);
+            modelBuilder.Entity<Device>()
+                .HasIndex(d => d.RackID);
+            modelBuilder.Entity<Device>()
+                .HasIndex(d => d.Status);
+            modelBuilder.Entity<Device>()
+                .HasIndex(d => d.ParentDeviceID);
+
+            // Indexes for Port
+            modelBuilder.Entity<Port>()
+                .HasIndex(p => p.DeviceID);
+            modelBuilder.Entity<Port>()
+                .HasIndex(p => p.PortType);
+
+            // Indexes for PortConnection
+            modelBuilder.Entity<PortConnection>()
+                .HasIndex(pc => new { pc.SourcePortID, pc.DestinationPortID })
+                .IsUnique();
+
+            // Indexes for ConfigurationItem
+            modelBuilder.Entity<ConfigurationItem>()
+                .HasIndex(ci => ci.ConfigType);
+
+            // Indexes for Customer
+            modelBuilder.Entity<Customer>()
+                .HasIndex(c => c.Name);
+
+            // Indexes for Account
+            modelBuilder.Entity<Account>()
+                .HasIndex(a => a.Username)
+                .IsUnique();
+            modelBuilder.Entity<Account>()
+                .HasIndex(a => a.Email)
+                .IsUnique();
+        }
+
         private void UpdateAuditableEntities()
         {
             var utcNow = DateTime.UtcNow;
@@ -167,76 +230,28 @@ namespace Rack.MainInfrastructure.Data
 
         #region UnitOfWork Implementation
 
-        public bool HasActiveTransaction => _transaction != null;
+        public bool HasActiveTransaction => false;
 
         public async Task<TResult> ExecuteInTransactionAsync<TResult>(
             Func<Task<TResult>> action,
             CancellationToken cancellationToken = default)
         {
-            await BeginTransactionAsync(cancellationToken);
-            try
-            {
-                var result = await action();
-                await CommitAsync(cancellationToken);
-                return result;
-            }
-            catch
-            {
-                await RollBackAsync(cancellationToken);
-                throw;
-            }
+            throw new NotSupportedException("Manual transaction is not supported with SqlServerRetryingExecutionStrategy. Use SaveChangesAsync only.");
         }
 
         public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
         {
-            await _transactionLock.WaitAsync(cancellationToken);
-            try
-            {
-                if (_transaction == null)
-                {
-                    _transaction = await Database.BeginTransactionAsync(cancellationToken);
-                }
-            }
-            finally
-            {
-                _transactionLock.Release();
-            }
+            throw new NotSupportedException("Manual transaction is not supported with SqlServerRetryingExecutionStrategy. Use SaveChangesAsync only.");
         }
 
         public async Task CommitAsync(CancellationToken cancellationToken = default)
         {
-            await _transactionLock.WaitAsync(cancellationToken);
-            try
-            {
-                if (_transaction != null)
-                {
-                    await _transaction.CommitAsync(cancellationToken);
-                    await _transaction.DisposeAsync();
-                    _transaction = null;
-                }
-            }
-            finally
-            {
-                _transactionLock.Release();
-            }
+            throw new NotSupportedException("Manual transaction is not supported with SqlServerRetryingExecutionStrategy. Use SaveChangesAsync only.");
         }
 
         public async Task RollBackAsync(CancellationToken cancellationToken = default)
         {
-            await _transactionLock.WaitAsync(cancellationToken);
-            try
-            {
-                if (_transaction != null)
-                {
-                    await _transaction.RollbackAsync(cancellationToken);
-                    await _transaction.DisposeAsync();
-                    _transaction = null;
-                }
-            }
-            finally
-            {
-                _transactionLock.Release();
-            }
+            throw new NotSupportedException("Manual transaction is not supported with SqlServerRetryingExecutionStrategy. Use SaveChangesAsync only.");
         }
 
         #endregion UnitOfWork Implementation
@@ -261,7 +276,9 @@ namespace Rack.MainInfrastructure.Data
         {
             return (IGenericRepository<TEntity>)_repositories.GetOrAdd(
                 typeof(TEntity),
-                _ => new GenericRepository<TEntity>(this)
+                _ => _cache != null
+                    ? new GenericRepository<TEntity>(this, _cache)
+                    : throw new InvalidOperationException("IMemoryCache is required but not available")
             );
         }
 

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Rack.Application.Commons.Behaviors;
+using Rack.Application.Commons.Services;
 using System.Text;
 
 namespace Rack.Application;
@@ -17,6 +18,9 @@ public static class DependencyInjection
         var assembly = typeof(DependencyInjection).Assembly;
 
         services.AddSingleton<IMapper, Mapper>();
+
+        // Register application services
+        services.AddScoped<CommandBatchService>();
 
         // Validators (FluentValidation)
         services.AddValidatorsFromAssembly(assembly);

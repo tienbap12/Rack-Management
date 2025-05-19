@@ -11,6 +11,7 @@ using Rack.Contracts.PortConnection.Response;
 using Rack.Contracts.ConfigurationItem.Response;
 using Rack.Contracts.Port.Request;
 using Rack.Contracts.PortConnection.Request;
+using Rack.Domain.Enum;
 
 namespace Rack.Application.Feature.Device.Commands.Update;
 
@@ -21,6 +22,7 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
         UpdateDeviceCommand request,
         CancellationToken cancellationToken)
     {
+        Console.WriteLine(request.Request);
         var deviceRepository = unitOfWork.GetRepository<Domain.Entities.Device>();
         var deviceRackRepository = unitOfWork.GetRepository<Domain.Entities.DeviceRack>();
         var configItemRepo = unitOfWork.GetRepository<Domain.Entities.ConfigurationItem>();
@@ -53,7 +55,14 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
             // --- Update Properties ---
             device.Manufacturer = request.Request.Manufacturer ?? device.Manufacturer;
             device.Status = request.Request.Status ?? device.Status;
-            device.UPosition = request.Request.UPosition ?? device.UPosition;
+            if (request.Request.Status == DeviceStatus.Inventory)
+            {
+                device.UPosition = null;
+            }
+            else if (request.Request.UPosition.HasValue)
+            {
+                device.UPosition = request.Request.UPosition.Value;
+            }
             device.SlotInParent = request.Request.SlotInParent ?? device.SlotInParent;
             device.DeviceType = request.Request.DeviceType ?? device.DeviceType;
             device.IpAddress = request.Request.IpAddress ?? device.IpAddress;
@@ -64,7 +73,9 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
             device.Size = request.Request.Size ?? device.Size;
             device.RackID = request.Request.RackID ?? device.RackID;
             device.ParentDeviceID = request.Request.ParentDeviceID ?? device.ParentDeviceID;
-
+            // Log trạng thái entity trước khi lưu
+            await deviceRepository.UpdateAsync(device, cancellationToken);
+            Console.WriteLine($"[UpdateDevice] UPosition after set: {device.UPosition}");
             // --- Update ConfigurationItems ---
             if (request.Request.ConfigurationItems?.Any() == true)
             {
@@ -81,9 +92,8 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                     });
 
                 await configItemRepo.InsertRangeAsync(newConfigs, cancellationToken);
-                await unitOfWork.SaveChangesAsync();
             }
-
+            Console.WriteLine($"[UpdateDevice] UPosition after config: {device.UPosition}");
             // --- Update Cards ---
             if (request.Request.Cards != null)
             {
@@ -104,7 +114,6 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                 await portRepo.DeleteRangeAsync(oldPorts, cancellationToken);
                 var oldCards = cardRepo.BuildQuery.Where(c => c.DeviceID == device.Id);
                 await cardRepo.DeleteRangeAsync(oldCards, cancellationToken);
-                await unitOfWork.SaveChangesAsync();
 
                 if (request.Request.Cards.Count > 0)
                 {
@@ -116,7 +125,7 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                     }
                 }
             }
-
+            Console.WriteLine($"[UpdateDevice] UPosition after cards: {device.UPosition}");
             // --- Update Ports directly attached to device (not to cards) ---
             if (request.Request.Ports != null)
             {
@@ -128,7 +137,7 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                     await CreatePortConnectionsAsync(request.Request.Ports, clientPortIdToDbPortId, portConnectionRepo, cancellationToken);
                 }
             }
-
+            Console.WriteLine($"[UpdateDevice] UPosition after ports: {device.UPosition}");
             // --- Update Child Devices ---
             if (request.Request.ChildDevices?.Any() == true)
             {
@@ -156,6 +165,7 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                     await deviceRepository.CreateAsync(newChildDevice, cancellationToken);
                 }
             }
+            Console.WriteLine($"[UpdateDevice] UPosition after child devices: {device.UPosition}");
             await unitOfWork.SaveChangesAsync();
 
             // Truy vấn lại device với các thông tin liên quan
@@ -165,7 +175,7 @@ internal class UpdateDeviceCommandHandler(IUnitOfWork unitOfWork)
                 .Include(d => d.Ports)
                 .Include(d => d.ChildDevices)
                 .FirstOrDefaultAsync(d => d.Id == device.Id, cancellationToken);
-
+            Console.WriteLine($"[UpdateDevice] UPosition in DB after save: {updatedDevice.UPosition}");
             // Lấy tất cả PortConnections liên quan đến device
             var portIds = updatedDevice.Ports.Select(p => p.Id).ToList();
             var cardPortIds = updatedDevice.Cards.SelectMany(c => c.Ports).Select(p => p.Id).ToList();

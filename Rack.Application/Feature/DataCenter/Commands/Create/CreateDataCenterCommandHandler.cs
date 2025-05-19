@@ -9,11 +9,8 @@ internal class CreateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
 {
     public async Task<Response> Handle(CreateDataCenterCommand request, CancellationToken cancellationToken)
     {
-        await unitOfWork.BeginTransactionAsync(cancellationToken);
-        var dcRepo = unitOfWork.GetRepository<Domain.Entities.DataCenter>();
-
         // Kiểm tra trùng lặp
-        var existingDC = await dcRepo.BuildQuery
+        var existingDC = await unitOfWork.GetRepository<Domain.Entities.DataCenter>().BuildQuery
             .Where(x => x.Name == request.Name)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -25,7 +22,7 @@ internal class CreateDataCenterCommandHandler(IUnitOfWork unitOfWork) : ICommand
 
         // Mapping và tạo mới
         var newDC = request.Adapt<Domain.Entities.DataCenter>();
-        await dcRepo.CreateAsync(newDC, cancellationToken);
+        await unitOfWork.GetRepository<Domain.Entities.DataCenter>().CreateAsync(newDC, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Response.Success();
     }

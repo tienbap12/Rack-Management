@@ -28,4 +28,6 @@ public record DeviceResponse : BaseAuditDto
     public IEnumerable<PortResponse>? Ports { get; init; } = new List<PortResponse>();
     public IEnumerable<DeviceResponse>? ChildDevices { get; init; } = new List<DeviceResponse>();
     public IEnumerable<PortConnectionResponse>? PortConnections { get; init; } = new List<PortConnectionResponse>();
+    public string? DataCenterName { get; init; }
+    public string? DataCenterLocation { get; init; }
 }

@@ -30,6 +30,8 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
                     .ThenInclude(c => c.Ports)
                 .Include(d => d.Ports)
                 .Include(d => d.ChildDevices)
+                .Include(d => d.Rack)
+                    .ThenInclude(r => r.DataCenter)
                 .Where(d => !d.IsDeleted)
                 .Where(d => request.Id == null || (request.Id == Guid.Empty ? d.RackID == null : d.RackID == request.Id))
                 .Where(d => request.Status == null || d.Status == request.Status)
@@ -54,7 +56,11 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
             // Map sang response
             var deviceResponses = devices.Select(device =>
             {
-                var deviceResponse = device.Adapt<DeviceResponse>();
+                var deviceResponse = device.Adapt<DeviceResponse>() with
+                {
+                    DataCenterName = device.Rack?.DataCenter?.Name,
+                    DataCenterLocation = device.Rack?.DataCenter?.Location
+                };
                 if (device.DeviceType.ToLower() == "server")
                 {
                     return deviceResponse with
@@ -79,14 +85,16 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
                                                 DestinationPortID = pc.DestinationPortID,
                                                 CableType = pc.CableType,
                                                 Comment = pc.Comment,
-                                                SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto {
+                                                SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto
+                                                {
                                                     Id = pc.SourcePort.Device.Id,
                                                     RackName = pc.SourcePort.Device.Rack?.RackNumber,
                                                     Slot = pc.SourcePort.Device.UPosition?.ToString(),
                                                     DeviceName = pc.SourcePort.Device.Name
                                                 } : null,
                                                 SourcePort = pc.SourcePort?.Adapt<PortResponse>(),
-                                                DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                                DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto
+                                                {
                                                     Id = pc.DestinationPort.Device.Id,
                                                     RackName = pc.DestinationPort.Device.Rack?.RackNumber,
                                                     Slot = pc.DestinationPort.Device.UPosition?.ToString(),
@@ -142,14 +150,16 @@ internal class GetAllDeviceQueryHandler(IUnitOfWork unitOfWork)
                                         DestinationPortID = pc.DestinationPortID,
                                         CableType = pc.CableType,
                                         Comment = pc.Comment,
-                                        SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto {
+                                        SourceDevice = pc.SourcePort?.Device != null ? new SimpleDeviceDto
+                                        {
                                             Id = pc.SourcePort.Device.Id,
                                             RackName = pc.SourcePort.Device.Rack?.RackNumber,
                                             Slot = pc.SourcePort.Device.UPosition?.ToString(),
                                             DeviceName = pc.SourcePort.Device.Name
                                         } : null,
                                         SourcePort = pc.SourcePort?.Adapt<PortResponse>(),
-                                        DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto {
+                                        DestinationDevice = pc.DestinationPort?.Device != null ? new SimpleDeviceDto
+                                        {
                                             Id = pc.DestinationPort.Device.Id,
                                             RackName = pc.DestinationPort.Device.Rack?.RackNumber,
                                             Slot = pc.DestinationPort.Device.UPosition?.ToString(),
