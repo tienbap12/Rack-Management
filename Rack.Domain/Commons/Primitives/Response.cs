@@ -68,7 +68,7 @@ public class Response
         IsSuccess = isSuccess;
         StatusCode = statusCode;
         Message = message ?? (isSuccess ? "Lấy dữ liệu thành công" : error!.Message);
-        Error = error ?? Error.None;
+        Error = isSuccess ? null : error;
     }
 
     public bool IsSuccess { get; }
@@ -79,8 +79,8 @@ public class Response
 
     public string Message { get; }
 
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public Error Error { get; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public Error? Error { get; }
 
     public static Response Success(string? message = null, HttpStatusCodeEnum statusCode = HttpStatusCodeEnum.OK)
         => new(true, statusCode, message);
@@ -105,7 +105,7 @@ public class Response<T> : Response
         _data = data;
     }
 
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
     public T Data => IsSuccess && _data is not null
         ? _data
         : throw new InvalidOperationException("Lỗi tải dữ liệu");

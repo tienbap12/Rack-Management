@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Rack.Application.Commons.Abstractions;
-using Rack.Contracts.Authentication;
 using Rack.Domain.Commons.Abstractions;
+using Rack.Contracts.Authentication;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
 using Rack.Domain.Entities;

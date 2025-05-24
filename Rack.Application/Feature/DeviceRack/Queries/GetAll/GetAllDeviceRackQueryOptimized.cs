@@ -5,19 +5,13 @@ using Rack.Application.Commons.Helpers;
 using Rack.Contracts.DeviceRack.Response;
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
-using Rack.Domain.Entities;
 using Rack.Domain.Enum;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Net;
-using Rack.Contracts.Device.Responses;
 
 namespace Rack.Application.Feature.DeviceRack.Queries.GetAll
 {
-    public record GetAllDeviceRackQueryOptimized : IQuery<IReadOnlyList<DeviceRackQuickResponse>>;
+    public record GetAllDeviceRackQueryOptimized : IQuery<IReadOnlyList<DeviceRackQuickResponse>>
+    {
+    }
 
     public class GetAllDeviceRackQueryOptimizedHandler : IQueryHandler<GetAllDeviceRackQueryOptimized, IReadOnlyList<DeviceRackQuickResponse>>
     {
@@ -54,8 +48,16 @@ namespace Rack.Application.Feature.DeviceRack.Queries.GetAll
                                 Id = r.Id,
                                 RackNumber = r.RackNumber,
                                 Size = r.Size,
+                                DataCenterId = r.DataCenter.Id,
                                 DataCenterName = r.DataCenter.Name,
                                 DataCenterLocation = r.DataCenter.Location,
+                                CreatedBy = r.CreatedBy,
+                                CreatedOn = r.CreatedOn,
+                                LastModifiedBy = r.LastModifiedBy,
+                                LastModifiedOn = r.LastModifiedOn,
+                                DeletedBy = r.DeletedBy,
+                                DeletedOn = r.DeletedOn,
+                                IsDeleted = r.IsDeleted,
                                 Devices = r.Devices
                                     .Where(d => !d.IsDeleted && d.Status == DeviceStatus.Active)
                                     .Select(d => new DeviceQuickResponse
@@ -67,7 +69,13 @@ namespace Rack.Application.Feature.DeviceRack.Queries.GetAll
                                         Status = d.Status.ToString(),
                                         UPosition = d.UPosition,
                                         IpAddress = d.IpAddress,
-                                        // Thêm trường cần thiết khác nếu UI cần
+                                        CreatedBy = r.CreatedBy,
+                                        CreatedOn = r.CreatedOn,
+                                        LastModifiedBy = r.LastModifiedBy,
+                                        LastModifiedOn = r.LastModifiedOn,
+                                        DeletedBy = r.DeletedBy,
+                                        DeletedOn = r.DeletedOn,
+                                        IsDeleted = r.IsDeleted,
                                     }).ToList()
                             })
                             .ToListAsync(ct);

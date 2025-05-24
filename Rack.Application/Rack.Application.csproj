@@ -6,13 +6,10 @@
 	<ItemGroup>
 		<Compile Remove="Commons\Errors\**" />
 		<Compile Remove="Commons\Response\**" />
-		<Compile Remove="Feature\User\Queries\**" />
 		<EmbeddedResource Remove="Commons\Errors\**" />
 		<EmbeddedResource Remove="Commons\Response\**" />
-		<EmbeddedResource Remove="Feature\User\Queries\**" />
 		<None Remove="Commons\Errors\**" />
 		<None Remove="Commons\Response\**" />
-		<None Remove="Feature\User\Queries\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Rack.MainInfrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class ReCreateDb : Migration
+    public partial class InitDbOnServer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,7 @@ namespace Rack.MainInfrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     ContactInfo = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     DeletedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -77,7 +77,7 @@ namespace Rack.MainInfrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     DataCenterID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RackNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RackNumber = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     Size = table.Column<int>(type: "int", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     DeletedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -137,7 +137,7 @@ namespace Rack.MainInfrastructure.Migrations
                     ParentDeviceID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     RackID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     Size = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     IpAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UPosition = table.Column<int>(type: "int", nullable: true),
                     LinkIdPage = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -195,7 +195,7 @@ namespace Rack.MainInfrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Card",
+                name: "Cards",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -213,9 +213,9 @@ namespace Rack.MainInfrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Card", x => x.Id);
+                    table.PrimaryKey("PK_Cards", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Card_Devices_DeviceID",
+                        name: "FK_Cards_Devices_DeviceID",
                         column: x => x.DeviceID,
                         principalTable: "Devices",
                         principalColumn: "Id",
@@ -228,8 +228,7 @@ namespace Rack.MainInfrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     DeviceID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ConfigType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SerialNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ConfigType = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     ConfigValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Count = table.Column<int>(type: "int", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
@@ -286,14 +285,14 @@ namespace Rack.MainInfrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Port",
+                name: "Ports",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     DeviceID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CardID = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     PortName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PortType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PortType = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     DeletedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
                     DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -304,19 +303,60 @@ namespace Rack.MainInfrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Port", x => x.Id);
+                    table.PrimaryKey("PK_Ports", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Port_Card_CardID",
+                        name: "FK_Ports_Cards_CardID",
                         column: x => x.CardID,
-                        principalTable: "Card",
+                        principalTable: "Cards",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Port_Devices_DeviceID",
+                        name: "FK_Ports_Devices_DeviceID",
                         column: x => x.DeviceID,
                         principalTable: "Devices",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "PortConnections",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SourcePortID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DestinationPortID = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CableType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Comment = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedOn = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastModifiedOn = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastModifiedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PortConnections", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PortConnections_Ports_DestinationPortID",
+                        column: x => x.DestinationPortID,
+                        principalTable: "Ports",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PortConnections_Ports_SourcePortID",
+                        column: x => x.SourcePortID,
+                        principalTable: "Ports",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Accounts_Email",
+                table: "Accounts",
+                column: "Email",
+                unique: true,
+                filter: "[Email] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Accounts_RoleId",
@@ -324,14 +364,36 @@ namespace Rack.MainInfrastructure.Migrations
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Card_DeviceID",
-                table: "Card",
+                name: "IX_Accounts_Username",
+                table: "Accounts",
+                column: "Username",
+                unique: true,
+                filter: "[Username] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cards_DeviceID",
+                table: "Cards",
                 column: "DeviceID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ConfigurationItems_ConfigType",
+                table: "ConfigurationItems",
+                column: "ConfigType");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ConfigurationItems_DeviceID",
                 table: "ConfigurationItems",
                 column: "DeviceID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Customers_Name",
+                table: "Customers",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Devices_Name",
+                table: "Devices",
+                column: "Name");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Devices_ParentDeviceID",
@@ -344,19 +406,45 @@ namespace Rack.MainInfrastructure.Migrations
                 column: "RackID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Port_CardID",
-                table: "Port",
+                name: "IX_Devices_Status",
+                table: "Devices",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PortConnections_DestinationPortID",
+                table: "PortConnections",
+                column: "DestinationPortID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PortConnections_SourcePortID_DestinationPortID",
+                table: "PortConnections",
+                columns: new[] { "SourcePortID", "DestinationPortID" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Ports_CardID",
+                table: "Ports",
                 column: "CardID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Port_DeviceID",
-                table: "Port",
+                name: "IX_Ports_DeviceID",
+                table: "Ports",
                 column: "DeviceID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Ports_PortType",
+                table: "Ports",
+                column: "PortType");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Racks_DataCenterID",
                 table: "Racks",
                 column: "DataCenterID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Racks_RackNumber",
+                table: "Racks",
+                column: "RackNumber");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_UserId",
@@ -381,7 +469,7 @@ namespace Rack.MainInfrastructure.Migrations
                 name: "ConfigurationItems");
 
             migrationBuilder.DropTable(
-                name: "Port");
+                name: "PortConnections");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");
@@ -390,7 +478,7 @@ namespace Rack.MainInfrastructure.Migrations
                 name: "ServerRentals");
 
             migrationBuilder.DropTable(
-                name: "Card");
+                name: "Ports");
 
             migrationBuilder.DropTable(
                 name: "Accounts");
@@ -399,10 +487,13 @@ namespace Rack.MainInfrastructure.Migrations
                 name: "Customers");
 
             migrationBuilder.DropTable(
-                name: "Devices");
+                name: "Cards");
 
             migrationBuilder.DropTable(
                 name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "Devices");
 
             migrationBuilder.DropTable(
                 name: "Racks");

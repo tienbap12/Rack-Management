@@ -156,27 +156,32 @@ namespace Rack.MainInfrastructure.Repositories
                 .ToListBatchedAsync(batchSize: 1000, cancellationToken);
         }
 
-        public async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+        public Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
-            var entry = _context.Entry(entity);
-            if (entry.State == EntityState.Detached)
-            {
-                _dbSet.Attach(entity);
-                entry = _context.Entry(entity);
-            }
-            if (entry.State != EntityState.Modified)
-            {
-                entry.State = EntityState.Modified;
-            }
-            await _context.SaveChangesAsync(cancellationToken);
+            _dbSet.Update(entity);
             InvalidateEntityCache(entity.Id);
+            return Task.CompletedTask;
         }
 
-        public async Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+        public Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
         {
+            if (entities == null || !entities.Any())
+            {
+                return Task.CompletedTask;
+            }
+
             _dbSet.UpdateRange(entities);
-            await _context.SaveChangesAsync(cancellationToken);
-            InvalidateCache();
+            foreach (var entity in entities)
+            {
+                InvalidateEntityCache(entity.Id);
+            }
+            return Task.CompletedTask;
+        }
+
+        public void SetEntityState(TEntity entity, EntityState state)
+        {
+            var entry = _context.Entry(entity);
+            entry.State = state;
         }
 
         // Helper methods for cache invalidation
@@ -196,7 +201,7 @@ namespace Rack.MainInfrastructure.Repositories
         {
             var cacheKey = $"{CacheKeyPrefix}{id}";
             _cache.Remove(cacheKey);
-            InvalidateCache(); // Also invalidate the collection cache
+            InvalidateCache();
         }
     }
 }

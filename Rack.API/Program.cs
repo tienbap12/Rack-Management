@@ -44,6 +44,10 @@ builder.Services.AddCorsConfig();
 builder.Services.AddSignalR();
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
+
+// Make sure HttpContextAccessor is registered
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
 
 // Add performance monitoring middleware

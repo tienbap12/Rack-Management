@@ -5,11 +5,9 @@ namespace Rack.Domain.Enum;
 
 public enum CommonStatus
 {
-    [EnumMember(Value = "Active")]
-    [Description("Entity is active")]
-    Active = 1,
+    [EnumMember(Value = "active")]
+    active = 0,
 
-    [EnumMember(Value = "Inactive")]
-    [Description("Entity is inactive")]
-    Inactive = 2
+    [EnumMember(Value = "inactive")]
+    inactive = 1
 }

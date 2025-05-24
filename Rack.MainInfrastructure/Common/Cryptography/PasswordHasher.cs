@@ -1,5 +1,4 @@
-﻿using Rack.Application.Commons.Abstractions;
-using Rack.Domain.Commons.Abstractions;
+﻿using Rack.Domain.Commons.Abstractions;
 using Rack.Domain.Entities;
 using System;
 using System.Linq;
@@ -8,7 +7,7 @@ using System.Text;
 
 namespace Rack.MainInfrastructure.Common.Cryptography
 {
-    internal sealed class PasswordHasher : IPasswordHasher, IPasswordHashChecker
+    internal sealed class PasswordHasher : Rack.Domain.Commons.Abstractions.IPasswordHasher, Rack.Domain.Commons.Abstractions.IPasswordHashChecker
     {
         public (string, string) HashPassword(string password)
         {
@@ -45,6 +44,26 @@ namespace Rack.MainInfrastructure.Common.Cryptography
             var computedHash = GenerateSaltedHash(password, user.Salt);
 
             return string.Equals(user.Password, computedHash);
+        }
+
+        public bool VerifyPassword(string password, string storedHash, string storedSalt)
+        {
+            if (string.IsNullOrWhiteSpace(password) ||
+                string.IsNullOrWhiteSpace(storedHash) ||
+                string.IsNullOrWhiteSpace(storedSalt))
+            {
+                return false;
+            }
+
+            try
+            {
+                var computedHash = GenerateSaltedHash(password, storedSalt);
+                return string.Equals(storedHash, computedHash);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static string GenerateSaltedHash(string plainText, string salt)

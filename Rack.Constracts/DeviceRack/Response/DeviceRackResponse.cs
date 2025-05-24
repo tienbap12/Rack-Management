@@ -9,10 +9,12 @@ public record DeviceRackResponse : BaseAuditDto
     public Guid DataCenterID { get; init; }
     public string RackNumber { get; init; }
     public int? Size { get; init; }
+    public string DataCenterName { get; init; }
+    public string DataCenterLocation { get; init; }
     public List<DeviceResponse> Devices { get; init; } = new();
 }
 
-public record DeviceQuickResponse
+public record DeviceQuickResponse : BaseAuditDto
 {
     public Guid Id { get; init; }
     public string Name { get; init; }
@@ -24,11 +26,12 @@ public record DeviceQuickResponse
     // Thêm trường cần thiết khác nếu UI cần
 }
 
-public record DeviceRackQuickResponse
+public record DeviceRackQuickResponse : BaseAuditDto
 {
     public Guid Id { get; init; }
     public string RackNumber { get; init; }
     public int? Size { get; init; }
+    public Guid DataCenterId { get; init; }
     public string DataCenterName { get; init; }
     public string DataCenterLocation { get; init; }
     public List<DeviceQuickResponse> Devices { get; init; } = new();

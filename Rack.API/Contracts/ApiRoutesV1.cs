@@ -119,6 +119,29 @@ public static class ApiRoutesV1
         public const string RefreshToken = Base + "/refresh-token";
     }
 
+    public static class Account
+    {
+        private const string ControllerBase = Base + "/accounts"; // "api/v1/accounts"
+
+        // GET api/v1/accounts
+        public const string GetAll = ControllerBase;
+
+        // GET api/v1/accounts/profile
+        public const string GetProfile = ControllerBase + "/profile";
+
+        // POST api/v1/accounts
+        public const string Create = ControllerBase;
+
+        // GET api/v1/accounts/{accountId:guid}
+        public const string GetById = ControllerBase + "/{accountId:guid}";
+
+        // PUT api/v1/accounts/{accountId:guid}
+        public const string Update = ControllerBase + "/{accountId:guid}";
+
+        // DELETE api/v1/accounts/{accountId:guid}
+        public const string Delete = ControllerBase + "/{accountId:guid}";
+    }
+
     public static class Role
     {
         private const string ControllerBase = Base + "/roles"; // Sẽ là "api/v1/roles"

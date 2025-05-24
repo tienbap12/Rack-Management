@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace Rack.Domain.Interfaces;
 
@@ -28,6 +29,7 @@ public interface IGenericRepository<TEntity> where TEntity : Entity
     // Update methods
     Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default);
     Task UpdateRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default);
+    void SetEntityState(TEntity entity, EntityState state);
 
     // Delete methods
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);

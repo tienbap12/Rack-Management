@@ -1,5 +1,6 @@
 using Rack.Domain.Commons.Primitives;
 using Rack.Domain.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Rack.Application.Feature.Role.Commands.Update;
 
@@ -14,8 +15,14 @@ public class UpdateRoleCommandHandler(IUnitOfWork unitOfWork) : ICommandHandler<
             return Response.Failure("Không tìm thấy Role này!", Domain.Enum.HttpStatusCodeEnum.NotFound);
         }
 
-        role.Name = request.Name;
-        role.Status = request.Status;
+        // Log giá trị trước khi update
+        Console.WriteLine($"[Before Update] Role: Id={role.Id}, Name={role.Name}, Status={role.Status}");
+
+        role.Name = request.Name ?? role.Name;
+        if (request.Status != role.Status)
+            role.Status = request.Status;
+        // Sử dụng phương thức SetEntityState mới
+        roleRepository.SetEntityState(role, EntityState.Modified);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

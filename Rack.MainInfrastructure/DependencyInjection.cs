@@ -1,9 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Rack.Application.Commons.Abstractions;
-using Rack.Application.Commons.Interfaces;
 using Rack.Domain.Commons.Abstractions;
+using Rack.Application.Commons.Interfaces;
 using Rack.Domain.Data;
 using Rack.Domain.Interfaces;
 using Rack.MainInfrastructure.Common.Authentication;
@@ -86,6 +85,7 @@ namespace Rack.MainInfrastructure
             services.AddScoped<IPasswordHashChecker, PasswordHasher>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<IMinIOService, MinioService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             // Configure HttpClient with resiliency
             services.AddHttpClient<IZabbixService, ZabbixService>(client =>

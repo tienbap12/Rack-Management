@@ -12,8 +12,8 @@ using Rack.MainInfrastructure.Data;
 namespace Rack.MainInfrastructure.Migrations
 {
     [DbContext(typeof(RackManagementContext))]
-    [Migration("20250429021436_updateCI")]
-    partial class updateCI
+    [Migration("20250519021812_InitDbOnServer")]
+    partial class InitDbOnServer
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -84,7 +84,15 @@ namespace Rack.MainInfrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("[Email] IS NOT NULL");
+
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("Username")
+                        .IsUnique()
+                        .HasFilter("[Username] IS NOT NULL");
 
                     b.ToTable("Accounts");
                 });
@@ -142,7 +150,7 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ConfigType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ConfigValue")
                         .HasColumnType("nvarchar(max)");
@@ -175,6 +183,8 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConfigType");
 
                     b.HasIndex("DeviceID");
 
@@ -212,9 +222,11 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name");
 
                     b.ToTable("Customers");
                 });
@@ -300,7 +312,7 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<Guid?>("ParentDeviceID")
                         .HasColumnType("uniqueidentifier");
@@ -325,9 +337,13 @@ namespace Rack.MainInfrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name");
+
                     b.HasIndex("ParentDeviceID");
 
                     b.HasIndex("RackID");
+
+                    b.HasIndex("Status");
 
                     b.ToTable("Devices");
                 });
@@ -363,7 +379,7 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("RackNumber")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Size")
                         .HasColumnType("int");
@@ -371,6 +387,8 @@ namespace Rack.MainInfrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DataCenterID");
+
+                    b.HasIndex("RackNumber");
 
                     b.ToTable("Racks");
                 });
@@ -412,13 +430,15 @@ namespace Rack.MainInfrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PortType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CardID");
 
                     b.HasIndex("DeviceID");
+
+                    b.HasIndex("PortType");
 
                     b.ToTable("Ports");
                 });
@@ -466,7 +486,8 @@ namespace Rack.MainInfrastructure.Migrations
 
                     b.HasIndex("DestinationPortID");
 
-                    b.HasIndex("SourcePortID");
+                    b.HasIndex("SourcePortID", "DestinationPortID")
+                        .IsUnique();
 
                     b.ToTable("PortConnections");
                 });

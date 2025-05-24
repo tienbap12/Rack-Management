@@ -9,7 +9,7 @@ namespace Rack.Domain.Entities
     public class Role : Entity, IAuditInfo, ISoftDelete
     {
         public string Name { get; set; }
-        public CommonStatus Status { get; set; } = CommonStatus.Active;
+        public CommonStatus Status { get; set; } = CommonStatus.active;
         public bool IsDeleted { get; set; }
         public DateTime? DeletedOn { get; set; }
         public string? DeletedBy { get; set; }

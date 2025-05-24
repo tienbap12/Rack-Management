@@ -10,7 +10,7 @@ public class RackManagementContextFactory()
     public RackManagementContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<RackManagementContext>();
-        optionsBuilder.UseSqlServer("Server=THANHTIEN-24695;Database=RackManagementDB;User Id=sa;Password=123;TrustServerCertificate=True;");
+        optionsBuilder.UseSqlServer("Server=103.9.156.221,1433;Database=RackManagementDB;User Id=admin;Password=Admin@@6789@@;TrustServerCertificate=True;");
 
         return new RackManagementContext(optionsBuilder.Options);
     }
